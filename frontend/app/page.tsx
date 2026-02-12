@@ -2,6 +2,7 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 import type { editor as MonacoEditor } from "monaco-editor";
+import XTerminal from "./components/Terminal";
 
 const Home = () => {
 
@@ -32,8 +33,12 @@ const Home = () => {
     <div className="flex h-full justify-start  w-full" >
       <div className="min-w-xs">files</div>
     <div className="h-full">
-    <Editor className="min-w-xl h-full"  defaultLanguage="javascript" defaultValue="// start coding" theme="vs-dark" onMount={handleEditorDidMount}/>
+    <Editor height={"70vh"} className="min-w-xl h-full"  defaultLanguage="python" defaultValue="// start coding" theme="vs-dark" onMount={handleEditorDidMount}/>
     </div>
+    </div>
+    <div>
+            <XTerminal/>
+
     </div>
     <pre>
         {value}
