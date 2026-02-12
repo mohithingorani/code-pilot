@@ -1,22 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
-export default function XTerminal() {
-  const terminalRef = useRef<any>(null);
-  const currentTerm = useRef<any>(null);
-  const websocketClient = useRef<WebSocket>(null)
-  const [currentMessage, setCurrentMessage] = useState<string>("");
-
-
+import { useEffect, useRef } from "react";
+export default function XTerminal({socket}:{socket:WebSocket}) {
+  const terminalRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     let term: any;
-    let fitAddon: any;
 
-    const loadTerminal = async () => {
+    const init = async () => {
       const { Terminal } = await import("xterm");
       const { FitAddon } = await import("xterm-addon-fit");
-
       //@ts-ignore
       await import("xterm/css/xterm.css");
 
@@ -24,46 +16,37 @@ export default function XTerminal() {
         cursorBlink: true,
         fontSize: 14,
       });
-      currentTerm.current = term
 
-      fitAddon = new FitAddon();
+      const fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
 
+      if(!socket) return;
       if (terminalRef.current) {
         term.open(terminalRef.current);
         fitAddon.fit();
-        term.write("Cloud Terminal Ready 🚀\r\n");
+
+        term.onData((data) => {
+          socket.send(data);
+        }); 
       }
+
+      
+
+
+
+      socket.onmessage = (event) => {
+        term.write(event.data);
+      };
+
     };
 
-    loadTerminal();
+    init();
 
     return () => {
-      if (term) term.dispose();
+      socket?.close();
+      term?.dispose();
     };
-  }, []);
-
-    useEffect(() => {
-
-    const wss = new WebSocket("ws://localhost:8080");
-    websocketClient.current = wss
-    wss.onopen = () => {
-        console.log("Websocket connected");
-    };
-
-    wss.onmessage = (event) => {
-        const message = event.data;
-        currentTerm.current.write(message.toString())
-    };
-    wss.onclose = () => {
-      console.log("WebSocket Disconnected");
-    };
-
-
-    return () => {
-      wss.close();
-    };
-  }, []);
+  }, [socket]);
 
   return <div ref={terminalRef} className="w-full h-full" />;
 }

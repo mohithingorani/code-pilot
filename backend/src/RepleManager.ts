@@ -12,7 +12,7 @@ class Reple {
     console.log("Node PATH:", process.env.PATH);
     this.shell = pty.spawn(
       "docker",
-      ["run", "-it", "--rm", "codepilot", "python3"],
+      ["run", "-it", "--rm", "codepilot", "bash"],
       {
         name: "xterm-color",
         cols: 80,

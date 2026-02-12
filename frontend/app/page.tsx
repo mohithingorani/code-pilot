@@ -1,49 +1,41 @@
 "use client";
 import Editor from "@monaco-editor/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, } from "react";
 import type { editor as MonacoEditor } from "monaco-editor";
 import XTerminal from "./components/Terminal";
+import { useSocket } from "./hooks/websocket";
 
 const Home = () => {
 
-
+  const socket = useSocket();
+  const [currentVal,setCurrentVal] = useState("")
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
-  const [value,setValue] = useState<string | undefined>()
 
   function handleEditorDidMount(editor :MonacoEditor.IStandaloneCodeEditor, monaco:typeof import("monaco-editor")){
     editorRef.current = editor;
   }
 
-  function showValue(){
-    if(editorRef.current){
-      setValue(editorRef.current.getValue())
-    }
+  function handleEditorDidChange(value:string | undefined){
+    if(!value || !socket) return;
+    setCurrentVal(value)
   }
 
-  useEffect(()=>{
-    const interval = setInterval(()=>{
-      showValue()
-    },1500)
 
-    return ()=>clearInterval(interval)
-  })
-
+ 
   return (
     <div className="h-full w-full">
     <div className="flex h-full justify-start  w-full" >
       <div className="min-w-xs">files</div>
     <div className="h-full">
-    <Editor height={"70vh"} className="min-w-xl h-full"  defaultLanguage="python" defaultValue="// start coding" theme="vs-dark" onMount={handleEditorDidMount}/>
+      <div onKeyDown={(e)=>{ e.key=="Enter"&& socket?.send(currentVal)}}>
+    <Editor onChange={handleEditorDidChange}  height={"70vh"} className="min-w-xl h-full"  defaultLanguage="python" defaultValue={"# print Hello World"} theme="vs-dark" onMount={handleEditorDidMount}/>
+    </div>
     </div>
     </div>
     <div>
-            <XTerminal/>
+      {<XTerminal socket={socket}/>}
 
     </div>
-    <pre>
-        {value}
-        
-      </pre>
       </div>
   );
 };
