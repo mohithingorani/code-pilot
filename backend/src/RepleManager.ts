@@ -55,6 +55,8 @@ EOF
       setTimeout(() => {
     this.createFilesInContainer();
     this.shell?.write("clear\n"); 
+
+    this.sendMessage(JSON.stringify({ type:"files", data: this.files }));
   }, 1000); 
   }
 
@@ -68,7 +70,8 @@ EOF
     if (!this.shell) return;
 
     this.shell.onData((data) => {
-      this.sendMessage(data);
+      const parsed = JSON.stringify({ type: "terminal", payload: { data } });
+      this.sendMessage(parsed);
     });
 
     this.shell.onExit(() => {
@@ -76,12 +79,14 @@ EOF
     });
 
     this.user.on("message", (msg) => {
-      // const parsed = JSON.parse(msg.toString());
+      const parsed = JSON.parse(msg.toString());
       // if(parsed.type === "code") {
       //   this.code = parsed.data;
       //   return;
       // }
-      this.shell?.write(msg.toString());
+      if(parsed.type==="terminal"){
+        this.shell?.write(parsed.payload.data);
+      }
     });
   }
 

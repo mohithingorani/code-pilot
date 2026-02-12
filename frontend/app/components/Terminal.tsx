@@ -26,7 +26,7 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
         fitAddon.fit();
 
         term.onData((data:any) => {
-          socket.send(data);
+          socket.send(JSON.stringify({ type: "terminal", payload: { data } }));
         }); 
       }
 
@@ -35,7 +35,12 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
 
 
       socket.onmessage = (event) => {
-        term.write(event.data);
+        if(typeof event.data === "string") {
+          const parsed = JSON.parse(event.data);
+          if(parsed.type === "terminal") {
+            term.write(parsed.payload.data);
+          }
+        }
       };
 
     };
