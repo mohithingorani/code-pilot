@@ -11,7 +11,10 @@ wss.on("connection", (ws: WebSocket) => {
   reple.init();
   reple.start();
 
-  ws.on("close", () => {
-    reple.close();
-  });
+ws.on("close", () => {
+console.log("Client disconnected");reple.close(); });
+
+ws.on("error", (err) => {
+console.error("WebSocket error:", err);reple.close(); });
+
 });

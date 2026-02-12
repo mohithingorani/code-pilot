@@ -25,7 +25,7 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
         term.open(terminalRef.current);
         fitAddon.fit();
 
-        term.onData((data) => {
+        term.onData((data:any) => {
           socket.send(data);
         }); 
       }
