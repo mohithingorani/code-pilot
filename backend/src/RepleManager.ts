@@ -25,6 +25,7 @@ class Reple {
   }
 
  createFilesInContainer() {
+  console.log("Creating files in container...");
   if (!this.shell) return;
 
   this.files.forEach(file => {
@@ -86,6 +87,16 @@ EOF
       // }
       if(parsed.type==="terminal"){
         this.shell?.write(parsed.payload.data);
+      }
+      if(parsed.type === "files") {
+        console.log("Received file update from client:", parsed.payload);
+        const { data } = parsed.payload;
+        const file = this.files.find(f => f.name === data.file_name);
+        if(file) {
+          console.log(`Updating content of ${file.name}`);
+          file.content = data.data;
+          this.createFilesInContainer();
+        }
       }
     });
   }

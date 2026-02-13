@@ -23,13 +23,16 @@ const Home = () => {
 
 
   useEffect(()=>{
-    if(!connected || !socket) return;
+    if(!connected || !socket || !files.length) return;
     const sendCode = setTimeout(()=>{
-      socket.send(JSON.stringify({type:"code",data:currentVal}))
+      socket.send(JSON.stringify({type:"files",payload:{data:currentVal,file_name:files[0].name}}))
     },1000)
 
     return () => clearTimeout(sendCode);
   },[currentVal,connected])
+
+  
+
 
   useEffect(()=>{
     if(!socket) return;
@@ -46,6 +49,8 @@ const Home = () => {
     //   }
     // };
 
+    
+
     const handleMessage =  (event:MessageEvent<string>) => {
       console.log("Received message:", event.data);
       if(typeof event.data === "string") {
@@ -55,8 +60,6 @@ const Home = () => {
           console.log("Received files:", parsed.data);
           setFiles(parsed.data);
           setCurrentVal(parsed.data[0].content);
-
-
         }
       }
     };
