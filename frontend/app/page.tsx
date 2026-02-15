@@ -24,8 +24,9 @@ const Home = () => {
 
   useEffect(()=>{
     if(!connected || !socket || !files.length) return;
+    files[0].content = currentVal || files[0].content;
     const sendCode = setTimeout(()=>{
-      socket.send(JSON.stringify({type:"files",payload:{data:currentVal,file_name:files[0].name}}))
+      socket.send(JSON.stringify({type:"files",payload:{files}}))
     },1000)
 
     return () => clearTimeout(sendCode);

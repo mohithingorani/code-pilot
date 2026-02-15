@@ -1,5 +1,7 @@
 import WebSocket from "ws";
 import pty from "node-pty";
+import path from "path"
+import fs from "fs"
 class Reple {
   user: WebSocket;
   shell: pty.IPty | null = null;
@@ -7,15 +9,15 @@ class Reple {
   files = [
     {
       name: "main.py",
-      content: "# Write your code here\nprint('Hello, World!')",
+      content: "# Write your code here\nprint('Hello, World!')\n",
     },
     {
       name: "utils.py",
-      content: "# Utility functions\n\ndef add(a, b):\n    return a + b",
+      content: "# Utility functions\n\ndef add(a, b):\n    return a + b\n",
     },
     {
       name: "README.md",
-      content: "# REPLIT Clone\n\nThis is a simple REPLIT clone built with WebSockets and Docker.",
+      content: "# REPLIT Clone\n\nThis is a simple REPLIT clone built with WebSockets and Docker.\n",
     }
   ];
 
@@ -24,26 +26,41 @@ class Reple {
     this.user = user;
   }
 
- createFilesInContainer() {
-  console.log("Creating files in container...");
-  if (!this.shell) return;
+// createFilesInContainer = () => {
+//   if (!this.shell) return;
 
-  this.files.forEach(file => {
-    const command = `
-cat <<'EOF' > ${file.name}
-${file.content}
-EOF
-`;
-    this.shell?.write(command);
-  });
-}
+//   this.files.forEach(file => {
+//     const escaped = file.content
+//       .replace(/\\/g, "\\\\")
+//       .replace(/"/g, '\\"')
+//       .replace(/\$/g, "\\$")
+//       .replace(/`/g, "\\`");
+
+//     const command = `printf "%s" "${escaped}" > ${file.name}\n`;
+//     if (this.shell) {
+//     this.shell.write(command);
+//     }else {      console.error("Shell is not initialized");
+//     }
+//   });
+// };
 
 
   init() {
     // console.log("Node PATH:", process.env.PATH);
+
+    const session_id ="123";
+    const hostDir = path.join(process.cwd(),"repl_storage",session_id)
+    this.files.forEach(file => {
+    
+    fs.writeFileSync(
+      path.join(hostDir, file.name),
+      file.content
+    );
+
+});
     this.shell = pty.spawn(
       "docker",
-      ["run", "-it", "--rm", "codepilot", "bash"],
+      ["run", "-it", "--rm","-v",`${hostDir}:/workspace`,"-w","/workspace", "codepilot", "bash"],
       {
         name: "xterm-color",
         cols: 80,
@@ -53,13 +70,12 @@ EOF
       },
     );
 
-      setTimeout(() => {
-    this.createFilesInContainer();
-    this.shell?.write("clear\n"); 
+    //  this.createFilesInContainer();
+    // this.shell?.write("clear\n"); 
 
     this.sendMessage(JSON.stringify({ type:"files", data: this.files }));
-  }, 1000); 
   }
+  
 
   sendMessage(message: string) {
     if (this.user.readyState === WebSocket.OPEN) {
@@ -90,12 +106,12 @@ EOF
       }
       if(parsed.type === "files") {
         console.log("Received file update from client:", parsed.payload);
-        const { data } = parsed.payload;
-        const file = this.files.find(f => f.name === data.file_name);
-        if(file) {
-          console.log(`Updating content of ${file.name}`);
-          file.content = data.data;
-          this.createFilesInContainer();
+        const { files } = parsed.payload;
+        console.log(files);
+        if(files) {
+          console.log("this is a file")
+          this.files = files;          
+          // this.createFilesInContainer();
         }
       }
     });
