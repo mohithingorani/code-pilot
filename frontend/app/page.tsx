@@ -10,6 +10,7 @@ import { EDITOR_ICONS } from "./data";
 const Home = () => {
 
   const { socket, connected } = useSocket();
+
   const [currentVal,setCurrentVal] = useState<string | null>(null)
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
   const [files, setFiles] = useState<{name:string,content:string}[] >([])
@@ -22,6 +23,8 @@ const Home = () => {
     if(!value || !socket) return;
     setCurrentVal(value)
   }
+
+ 
 
 
   useEffect(()=>{
@@ -36,8 +39,8 @@ const Home = () => {
 
   const handleEditorWillMount = (monaco:typeof import("monaco-editor")) => {
     monaco.editor.defineTheme('my-custom-theme', {
-      base: 'vs-dark', // can also be 'vs' (light) or 'hc-black' (high contrast)
-      inherit: true, // set to false to completely replace the built-in rules
+      base: 'vs-dark', 
+      inherit: true, 
       rules: [
         { token: '', foreground: 'FFFFFF', background: '222222' },
         { token: 'keyword', foreground: '569CD6' },
@@ -81,37 +84,9 @@ const Home = () => {
   },[socket])
 
 
-
-//  if(!socket){
-//   return <div className="w-full z-50 h-full bg-white">Loading...</div>
-//  }
-
-//   return (
-//     <div>
-//     <div className="h-full w-full">
-      
-//     <div className="flex h-full justify-start  w-full" >
-//     <div>
-//       {files &&files.map((file)=><div key={file.name}>
-//         <h3>{file.name}</h3>
-//       </div>)}
-//     </div>    <div className="h-full">
-//       {/* <div onKeyDown={(e)=>{ e.key=="Enter"&& socket?.send(currentVal)}}> */}
-//     <div>
-//     {currentVal!=null && <Editor onChange={handleEditorDidChange}  height={"70vh"} className="min-w-xl h-full" value={currentVal} defaultLanguage={"python"}  theme="vs-dark" onMount={handleEditorDidMount}/>}
-//     </div>
-//     </div>
-//     </div>
-  
-
-//       </div>
-//       </div>
-//   );
-// };
-
 return (
   <div className="w-full h-full flex justify-center items-center py-12">
-    <div className=" w-5xl h-full rounded-lg  flex flex-start overflow-hidden relative">
+    <div className=" w-5xl h-full rounded-lg  flex flex-start overflow-hidden ">
       <div className="w-xs text-white bg-black/50 py-2  backdrop-filter backdrop-blur-md ">
       <div className="flex justify-center items-center font-medium text-lg">Editor</div>
       <div><EditorOptions/></div>
@@ -121,7 +96,7 @@ return (
         <div className=" w-full">
           <Editor onChange={handleEditorDidChange} beforeMount={handleEditorWillMount} height={"83vh"}   className="w-full " value={currentVal || ""} defaultLanguage={"python"}  theme="my-custom-theme" onMount={handleEditorDidMount}/>
         </div>
-         <div className="absolute z-100 bottom-0 max-h-64 w-full bg-green-300">
+         <div className="absolute overflow-scroll z-100 bottom-0 max-h-64 w-full bg-black p-3">
         <XTerminal socket={socket}/>
 
       </div>
@@ -132,9 +107,7 @@ return (
 )
 }
 
-  {/* <div className="z-10">
-      {<XTerminal socket={socket}/>}
-    </div> */}
+
 
 export default Home;
 

@@ -3,6 +3,13 @@
 import { useEffect, useRef } from "react";
 export default function XTerminal({socket}:{socket:WebSocket}) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
+
+
+  // const scrollToBottom = () => {
+  //   if(!terminalRef.current) return;
+  //   terminalRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  // };
+
   useEffect(() => {
     let term: any;
 
@@ -30,6 +37,8 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
         }); 
       }
 
+
+
       
 
 
@@ -53,5 +62,5 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
     };
   }, [socket]);
 
-  return <div ref={terminalRef} className="w-full h-full" />;
+  return <div  ref={terminalRef} className="w-full h-full overflow-scroll" />;
 }

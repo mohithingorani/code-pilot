@@ -2,29 +2,21 @@ import WebSocket from "ws";
 import pty from "node-pty";
 import path from "path";
 import fs from "fs";
+import { Language } from "./types.js";
+import { FilesMap } from "./data.js";
+
 class Reple {
   user: WebSocket;
   shell: pty.IPty | null = null;
   code: string = "";
-  hostDirectory : string | null = null
-  files = [
-    {
-      name: "main.py",
-      content: "# Write your code here\nprint('Hello, World!')\n",
-    },
-    {
-      name: "utils.py",
-      content: "# Utility functions\n\ndef add(a, b):\n    return a + b\n",
-    },
-    {
-      name: "README.md",
-      content:
-        "# REPLIT Clone\n\nThis is a simple REPLIT clone built with WebSockets and Docker.\n",
-    },
-  ];
+  hostDirectory : string | null = null;
+  language: Language;
+  files :any = null;
 
-  constructor(user: WebSocket) {
+  constructor(user: WebSocket,language:Language) {
     this.user = user;
+    this.language = language;
+
   }
 
   sendMessage = (message: string) => {
@@ -35,10 +27,24 @@ class Reple {
 
   init = () => {
     const session_id = "123";
+    this.files = FilesMap.get(this.language);
     const hostDir = path.join(process.cwd(), "repl_storage", session_id);
     this.hostDirectory = hostDir
+    if(!fs.existsSync(hostDir)){
+      fs.mkdirSync(hostDir, { recursive: true });
+    }
+    else{
+    fs.rm(hostDir,{ recursive: true, force: true }, (err) => {
+      if (err) {
+        console.error("Error clearing host directory:", err);
+      } else {
+        console.log("Host directory cleared successfully");
+      }
+    });
+    }
     console.log("Host Dir", hostDir);
-    this.files.forEach((file) => {
+    fs.mkdirSync(hostDir, { recursive: true });
+    this.files.forEach((file:any) => {
       fs.writeFileSync(path.join(hostDir, file.name), file.content);
     });
 
