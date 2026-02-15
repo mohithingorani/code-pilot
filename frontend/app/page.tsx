@@ -6,6 +6,7 @@ import XTerminal from "./components/Terminal";
 import { useSocket } from "./hooks/websocket";
 import Image from "next/image";
 import { EDITOR_ICONS } from "./data";
+import { HeadingTabs } from "./components/HeadingTabs";
 
 const Home = () => {
 
@@ -92,8 +93,8 @@ return (
       <div><EditorOptions/></div>
       </div>
       <div className="w-full max-h-full relative ">
-        {headingTabs(files)}
-        <div className=" w-full">
+        <HeadingTabs files={files}/>
+        <div className=" w-full bg-[#222222] pt-4">
           <Editor onChange={handleEditorDidChange} beforeMount={handleEditorWillMount} height={"83vh"}   className="w-full " value={currentVal || ""} defaultLanguage={"python"}  theme="my-custom-theme" onMount={handleEditorDidMount}/>
         </div>
          <div className="absolute overflow-scroll z-100 bottom-0 max-h-64 w-full bg-black p-3">
@@ -112,16 +113,7 @@ return (
 export default Home;
 
 
-function headingTabs(files:{name:string,content:string}[]){
-  return (
-    <div className="bg-[#191919] text-white text-sm h-fit">
-      {files.map((file)=>
-      <span key={file.name} className="px-4 max-w-24 flex justify-center items-center cursor-pointer hover:bg-white/10 py-2">
-        <Image src={`/file-icons/${file.name.split('.').pop() || 'empty'}.svg`} alt="File Icon" width={20} height={20} className="mr-2 inline-block"/>
-        {file.name}</span>)}
-    </div>
-  )
-}
+
 
 function EditorOptions(){
   return (
