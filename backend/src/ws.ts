@@ -8,7 +8,7 @@ const wss = new WebSocketServer({ port: 8080 });
 wss.on("connection", (ws: WebSocket) => {
   console.log("Client connected");
 
-  const reple = new Reple(ws,Language.JAVASCRIPT);
+  const reple = new Reple(ws,Language.PYTHON);
   reple.init();
 
   ws.on("close", () => {

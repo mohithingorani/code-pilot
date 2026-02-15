@@ -3,4 +3,5 @@ export enum Language{
     JAVASCRIPT = "javascript",
     JAVA = "java",
     CPP = "cpp",
+    MD = "markdown"
 }
