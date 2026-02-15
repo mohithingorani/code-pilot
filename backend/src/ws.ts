@@ -9,12 +9,14 @@ wss.on("connection", (ws: WebSocket) => {
 
   const reple = new Reple(ws);
   reple.init();
-  reple.start();
 
-ws.on("close", () => {
-console.log("Client disconnected");reple.close(); });
+  ws.on("close", () => {
+    console.log("Client disconnected");
+    reple.close();
+  });
 
-ws.on("error", (err) => {
-console.error("WebSocket error:", err);reple.close(); });
-
+  ws.on("error", (err) => {
+    console.error("WebSocket error:", err);
+    reple.close();
+  });
 });

@@ -1,11 +1,12 @@
 import WebSocket from "ws";
 import pty from "node-pty";
-import path from "path"
-import fs from "fs"
+import path from "path";
+import fs from "fs";
 class Reple {
   user: WebSocket;
   shell: pty.IPty | null = null;
   code: string = "";
+  hostDirectory : string | null = null
   files = [
     {
       name: "main.py",
@@ -17,50 +18,43 @@ class Reple {
     },
     {
       name: "README.md",
-      content: "# REPLIT Clone\n\nThis is a simple REPLIT clone built with WebSockets and Docker.\n",
-    }
+      content:
+        "# REPLIT Clone\n\nThis is a simple REPLIT clone built with WebSockets and Docker.\n",
+    },
   ];
-
 
   constructor(user: WebSocket) {
     this.user = user;
   }
 
-// createFilesInContainer = () => {
-//   if (!this.shell) return;
+  sendMessage = (message: string) => {
+    if (this.user.readyState === WebSocket.OPEN) {
+      this.user.send(message);
+    }
+  };
 
-//   this.files.forEach(file => {
-//     const escaped = file.content
-//       .replace(/\\/g, "\\\\")
-//       .replace(/"/g, '\\"')
-//       .replace(/\$/g, "\\$")
-//       .replace(/`/g, "\\`");
+  init = () => {
+    const session_id = "123";
+    const hostDir = path.join(process.cwd(), "repl_storage", session_id);
+    this.hostDirectory = hostDir
+    console.log("Host Dir", hostDir);
+    this.files.forEach((file) => {
+      fs.writeFileSync(path.join(hostDir, file.name), file.content);
+    });
 
-//     const command = `printf "%s" "${escaped}" > ${file.name}\n`;
-//     if (this.shell) {
-//     this.shell.write(command);
-//     }else {      console.error("Shell is not initialized");
-//     }
-//   });
-// };
-
-
-  init() {
-    // console.log("Node PATH:", process.env.PATH);
-
-    const session_id ="123";
-    const hostDir = path.join(process.cwd(),"repl_storage",session_id)
-    this.files.forEach(file => {
-    
-    fs.writeFileSync(
-      path.join(hostDir, file.name),
-      file.content
-    );
-
-});
     this.shell = pty.spawn(
       "docker",
-      ["run", "-it", "--rm","-v",`${hostDir}:/workspace`,"-w","/workspace", "codepilot", "bash"],
+      [
+        "run",
+        "-it",
+        "--rm",
+        "-v",
+        `${hostDir}:/workspace`,
+        "-w",
+        "/workspace",
+        "codepilot",
+        "bash",
+      ],
       {
         name: "xterm-color",
         cols: 80,
@@ -71,20 +65,9 @@ class Reple {
     );
 
     //  this.createFilesInContainer();
-    // this.shell?.write("clear\n"); 
+    // this.shell?.write("clear\n");
 
-    this.sendMessage(JSON.stringify({ type:"files", data: this.files }));
-  }
-  
-
-  sendMessage(message: string) {
-    if (this.user.readyState === WebSocket.OPEN) {
-      this.user.send(message);
-    }
-  }
-
-  start() {
-    if (!this.shell) return;
+    this.sendMessage(JSON.stringify({ type: "files", data: this.files }));
 
     this.shell.onData((data) => {
       const parsed = JSON.stringify({ type: "terminal", payload: { data } });
@@ -97,33 +80,46 @@ class Reple {
 
     this.user.on("message", (msg) => {
       const parsed = JSON.parse(msg.toString());
-      // if(parsed.type === "code") {
-      //   this.code = parsed.data;
-      //   return;
-      // }
-      if(parsed.type==="terminal"){
-        this.shell?.write(parsed.payload.data);
+
+      switch (parsed.type) {
+        case "terminal":
+          this.shell?.write(parsed.payload.data);
+          break;
+
+        case "files":
+          console.log("Received file update from client:", parsed.payload);
+          const { files } = parsed.payload;
+          console.log(files);
+
+          if (files) {
+            console.log("this is a file");
+            this.files = files;
+            this.syncFilesToDisk(files);
+
+            console.log("Files updated on disk")
+          }
+          break;
       }
-      if(parsed.type === "files") {
-        console.log("Received file update from client:", parsed.payload);
-        const { files } = parsed.payload;
-        console.log(files);
-        if(files) {
-          console.log("this is a file")
-          this.files = files;          
-          // this.createFilesInContainer();
-        }
+    });
+  };
+
+  syncFilesToDisk = (files:{name:string,content:string}[])=>{
+    files.forEach((file)=>{
+      if(!this.hostDirectory) return;
+      if(!file.content.endsWith("\n")){
+        file.content = file.content.concat("\n");
       }
+      const filePath = path.join(this.hostDirectory,file.name);
+      fs.writeFileSync(filePath,file.content);
     });
   }
 
-  close() {
-    if(this.shell) {
-
+  close = () => {
+    if (this.shell) {
       this.shell.kill();
       this.shell = null;
       console.log("Shell closed");
     }
-  }
+  };
 }
 export default Reple;

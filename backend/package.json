@@ -2,11 +2,11 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/ws.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/ws.js",
-    "dev": "tsc --watch",
+    "dev": "tsc && node dist/ws.js",
     "format": "prettier --write ."
   },
   "keywords": [],
