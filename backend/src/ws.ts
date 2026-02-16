@@ -8,10 +8,10 @@ const wss = new WebSocketServer({ port: 8080 });
 wss.on("connection", (ws: WebSocket) => {
   console.log("Client connected");
 
-  const reple = new Reple(ws,Language.JAVASCRIPT);
+  const reple = new Reple(ws, Language.JAVASCRIPT,"mohit-project");
   reple.init();
 
-  ws.on("close", () => { 
+  ws.on("close", () => {
     console.log("Client disconnected");
     reple.close();
   });

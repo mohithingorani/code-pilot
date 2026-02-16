@@ -15,6 +15,7 @@ const Home = () => {
   const [currentVal,setCurrentVal] = useState<string | null>(null)
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
   const [files, setFiles] = useState<{name:string,content:string}[] >([])
+  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
 
   function handleEditorDidMount(editor :MonacoEditor.IStandaloneCodeEditor, monaco:typeof import("monaco-editor")){
     editorRef.current = editor;
@@ -28,15 +29,31 @@ const Home = () => {
  
 
 
-  useEffect(()=>{
-    if(!connected || !socket || !files.length) return;
-    files[0].content = currentVal || files[0].content;
-    const sendCode = setTimeout(()=>{
-      socket.send(JSON.stringify({type:"files",payload:{files}}))
-    },1000)
+useEffect(() => {
+  if (!connected || !socket || !files.length) return;
 
-    return () => clearTimeout(sendCode);
-  },[currentVal,connected])
+  const updatedFiles = files.map((file, index) => {
+    if (index === selectedFileIndex) {
+      return {
+        ...file,
+        content: currentVal ?? file.content,
+      };
+    }
+    return file;
+  });
+
+  const sendCode = setTimeout(() => {
+    socket.send(
+      JSON.stringify({
+        type: "files",
+        payload: { files: updatedFiles },
+      })
+    );
+  }, 800);
+
+  return () => clearTimeout(sendCode);
+}, [currentVal]);
+
 
   const handleEditorWillMount = (monaco:typeof import("monaco-editor")) => {
     monaco.editor.defineTheme('my-custom-theme', {
@@ -70,9 +87,14 @@ const Home = () => {
         const parsed = JSON.parse(event.data);
         console.log("Received message:", parsed);
         if(parsed.type === "files") {
-          console.log("Received files:", parsed.data);
-          setFiles(parsed.data);
-          setCurrentVal(parsed.data[0].content);
+          const newFiles = parsed.payload.files as {name:string,content:string}[];
+          
+          setFiles(newFiles);
+
+          if(newFiles.length > 0){
+            setCurrentVal(newFiles[0].content);
+            setSelectedFileIndex(0);
+          }
         }
       }
     };
@@ -84,6 +106,10 @@ const Home = () => {
     };
   },[socket])
 
+  function handleClick(index:number){
+    setSelectedFileIndex(index);
+    setCurrentVal(files[index].content)
+  }
 
 return (
   <div className="w-full h-full flex justify-center items-center py-12">
@@ -93,7 +119,7 @@ return (
       <div><EditorOptions/></div>
       </div>
       <div className="w-full max-h-full relative ">
-        <HeadingTabs files={files}/>
+        <HeadingTabs selectedFile={selectedFileIndex} files={files} onClick={ handleClick}/>
         <div className=" w-full bg-[#222222] pt-4">
           <Editor onChange={handleEditorDidChange} beforeMount={handleEditorWillMount} height={"83vh"}   className="w-full " value={currentVal || ""} defaultLanguage={"python"}  theme="my-custom-theme" onMount={handleEditorDidMount}/>
         </div>
