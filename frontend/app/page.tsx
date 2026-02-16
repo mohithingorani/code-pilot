@@ -133,7 +133,7 @@ return (
           }} onChange={handleEditorDidChange} beforeMount={handleEditorWillMount} height={"83vh"}   className="w-full " value={currentVal || ""} language={currentLanguage} theme="my-custom-theme" onMount={handleEditorDidMount}/>
         </div>
          <div className="absolute overflow-scroll z-100 bottom-0 max-h-64 w-full bg-black p-3">
-        <XTerminal socket={socket}/>
+        {socket&&<XTerminal socket={socket}/>}
 
       </div>
       </div>
