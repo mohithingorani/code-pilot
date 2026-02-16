@@ -10,6 +10,7 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
   //   terminalRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
   // };
 
+
   useEffect(() => {
     let term: any;
 
@@ -62,5 +63,5 @@ export default function XTerminal({socket}:{socket:WebSocket}) {
     };
   }, [socket]);
 
-  return <div  ref={terminalRef} className="w-full h-full overflow-scroll" />;
+  return <div  ref={terminalRef} className="w-full h-full" />;
 }

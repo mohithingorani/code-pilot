@@ -7,6 +7,7 @@ import { useSocket } from "./hooks/websocket";
 import Image from "next/image";
 import { EDITOR_ICONS } from "./data";
 import { HeadingTabs } from "./components/HeadingTabs";
+import getLanguageFromFileName from "./utils/languageSupport";
 
 const Home = () => {
 
@@ -16,6 +17,7 @@ const Home = () => {
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null)
   const [files, setFiles] = useState<{name:string,content:string}[] >([])
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [currentLanguage, setCurrentLanguage] = useState<string>("");
 
   function handleEditorDidMount(editor :MonacoEditor.IStandaloneCodeEditor, monaco:typeof import("monaco-editor")){
     editorRef.current = editor;
@@ -26,7 +28,6 @@ const Home = () => {
     setCurrentVal(value)
   }
 
- 
 
 
 useEffect(() => {
@@ -66,6 +67,7 @@ useEffect(() => {
         { token: 'string', foreground: 'CE9178' },
         { token: 'number', foreground: 'B5CEA8' },  
         { token: 'comment', foreground: '6A9955', fontStyle: 'italic' },
+
       ],
       colors: {
         'editor.background': '#222222', // Set the background color here
@@ -77,9 +79,6 @@ useEffect(() => {
   useEffect(()=>{
     if(!socket) return;
     console.log("Setting up socket listeners");
-
-
-    
 
     const handleMessage =  (event:MessageEvent<string>) => {
       console.log("Received message:", event.data);
@@ -94,6 +93,7 @@ useEffect(() => {
           if(newFiles.length > 0){
             setCurrentVal(newFiles[0].content);
             setSelectedFileIndex(0);
+            setCurrentLanguage(getLanguageFromFileName(newFiles[0].name));
           }
         }
       }
@@ -109,6 +109,7 @@ useEffect(() => {
   function handleClick(index:number){
     setSelectedFileIndex(index);
     setCurrentVal(files[index].content)
+    setCurrentLanguage(getLanguageFromFileName(files[index].name));
   }
 
 return (
@@ -121,7 +122,9 @@ return (
       <div className="w-full max-h-full relative ">
         <HeadingTabs selectedFile={selectedFileIndex} files={files} onClick={ handleClick}/>
         <div className=" w-full bg-[#222222] pt-4">
-          <Editor onChange={handleEditorDidChange} beforeMount={handleEditorWillMount} height={"83vh"}   className="w-full " value={currentVal || ""} defaultLanguage={"python"}  theme="my-custom-theme" onMount={handleEditorDidMount}/>
+          <Editor options={{
+            wordWrap:"on"
+          }} onChange={handleEditorDidChange} beforeMount={handleEditorWillMount} height={"83vh"}   className="w-full " value={currentVal || ""} language={currentLanguage} theme="my-custom-theme" onMount={handleEditorDidMount}/>
         </div>
          <div className="absolute overflow-scroll z-100 bottom-0 max-h-64 w-full bg-black p-3">
         <XTerminal socket={socket}/>
@@ -134,12 +137,7 @@ return (
 )
 }
 
-
-
 export default Home;
-
-
-
 
 function EditorOptions(){
   return (
