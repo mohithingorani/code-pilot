@@ -8,6 +8,7 @@ import Image from "next/image";
 import { EDITOR_ICONS } from "./data";
 import { HeadingTabs } from "./components/HeadingTabs";
 import getLanguageFromFileName from "./utils/languageSupport";
+import FileStructure from "./components/FileStructure";
 
 const Home = () => {
 
@@ -119,6 +120,9 @@ return (
       <div className="col-span-2 w-full text-white bg-black/50 py-2  backdrop-filter backdrop-blur-md ">
         <div className="flex justify-center items-center font-medium text-lg">Editor</div>
         <div><EditorOptions/></div>
+        <div>
+          <FileStructure selected={selectedFileIndex} onClick={handleClick} files={files}/>
+        </div>
       </div>
 
       <div className="col-span-5 w-full max-h-full relative ">
