@@ -36,7 +36,7 @@ useEffect(() => {
     if (index === selectedFileIndex) {
       return {
         ...file,
-        content: currentVal ?? file.content,
+        content: currentVal?.endsWith("\n") ? currentVal : currentVal + "\n",
       };
     }
     return file;
@@ -112,7 +112,7 @@ useEffect(() => {
   }
 
 return (
-  <div className="w-full h-full flex justify-center items-center py-12">
+  <div className="w-full h-full flex justify-center items-center py-12 px-6">
     <div className=" w-5xl h-full rounded-lg  flex flex-start overflow-hidden ">
       <div className="w-xs text-white bg-black/50 py-2  backdrop-filter backdrop-blur-md ">
       <div className="flex justify-center items-center font-medium text-lg">Editor</div>
