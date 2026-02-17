@@ -145,18 +145,45 @@ class Reple {
       this.close();
     });
   };
+  private getHash = (content: string)=> {
+    return crypto.createHash("sha256").update(content).digest("hex");
+  }
+syncFilesToDisk = async (files: { name: string; content: string }[]) => {
+  console.log("Files syncing started");
 
-  syncFilesToDisk = async (files: { name: string; content: string }[]) => {
-    console.log("Files syncing started");
-    for (const file of files) {
-      
-      const filePath = path.join(this.hostDirectory, file.name);
-      console.log("file path synced :",filePath);
+  for (const file of files) {
+    const filePath = path.join(this.hostDirectory, file.name);
+
+    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+
+    let shouldUpload = true;
+
+    try {
+      // Check if file already exists
+      const existingContent = await fs.promises.readFile(filePath, "utf-8");
+
+      const existingHash = this.getHash(existingContent);
+      const newHash = this.getHash(file.content);
+
+      if (existingHash === newHash) {
+        shouldUpload = false; // No change
+      }
+    } catch {
+      // File does not exist yet → must upload
+      shouldUpload = true;
+    }
+
+    if (shouldUpload) {
+      console.log("Uploading changed file:", file.name);
+
       await fs.promises.writeFile(filePath, file.content);
       await uploadFile(this.projectId, filePath, this.hostDirectory);
+    } else {
+      console.log("No changes detected:", file.name);
     }
-    
-  };
+  }
+};
+
 
   close = () => {
     if (this.shell) {
