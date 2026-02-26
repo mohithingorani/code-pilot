@@ -2,7 +2,7 @@ import WebSocket from "ws";
 import pty from "node-pty";
 import path from "path";
 import fs from "fs";
-import { Language } from "./types.js";
+import { Language } from "./types";
 import crypto from "crypto";
 import { deleteFile, restoreProject, uploadFile } from "./utils/s3.js";
 

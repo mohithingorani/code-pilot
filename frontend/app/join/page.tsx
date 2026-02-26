@@ -2,12 +2,24 @@
 import Image from "next/image";
 import { useState } from "react";
 import { FormType } from "../types";
-
+import axios from "axios";
 
 
 export default function SignupUI() {
 
   const [formType, setFormType] = useState<FormType>(FormType.SIGNUP);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handleSubmit(e:any) {
+    e.preventDefault();
+    if (formType === FormType.SIGNUP) {
+
+      const signup = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/signup`, { email, password });
+      console.log(signup.data);
+    }
+    
+  }
 
   return (
     <div className="h-screen bg-[#283232] flex items-center justify-center ">
@@ -36,12 +48,16 @@ export default function SignupUI() {
               type="email"
               placeholder="mohit@gmail.com"
               className="w-full bg-[#2B3A37] px-4 py-3 rounded-md text-sm focus:outline-none"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
 
             <input
               type="password"
               placeholder="*************"
               className="w-full bg-[#2B3A37] px-4 py-3 rounded-md text-sm focus:outline-none"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
@@ -52,7 +68,7 @@ export default function SignupUI() {
             </span>
           </div>
 
-          <button className="mt-6 bg-lime-400 text-black py-3 rounded-md font-semibold hover:scale-[1.02] transition">
+          <button onClick={handleSubmit} className="mt-6 bg-lime-400 text-black py-3 rounded-md font-semibold hover:scale-[1.02] transition">
             {formType === FormType.SIGNUP ? "Sign up" : "Log in"}
           </button>
 

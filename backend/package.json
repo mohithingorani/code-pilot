@@ -2,34 +2,37 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/ws.js",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/ws.js",
-    "dev": "tsc && node dist/ws.js",
+    "start": "node dist/server.js",
+     "dev": "tsx watch src/server.ts",
+ 
     "format": "prettier --write ."
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.990.0",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@types/express": "^5.0.6",
     "@types/ws": "^8.18.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
     "node-pty": "^1.1.0",
     "pg": "^8.19.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
     "ws": "^8.19.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/pg": "^8.16.0",
     "prettier": "3.8.1",
-    "prisma": "^7.4.1"
+    "prisma": "^7.4.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,8 +1,8 @@
 import http from "http";
 import WebSocket, { WebSocketServer } from "ws";
-import { Language } from "./types.js";
-import Reple from "./RepleManager.js";
-import app from "./app.js";
+import { Language } from "./types";
+import Reple from "./RepleManager";
+import app from "./app";
 
 
 const server = http.createServer(app);
