@@ -1,9 +1,12 @@
-import { WebSocketServer } from "ws";
-import WebSocket from "ws";
-import Reple from "./RepleManager.js";
+import http from "http";
+import WebSocket, { WebSocketServer } from "ws";
 import { Language } from "./types.js";
+import Reple from "./RepleManager.js";
+import app from "./app.js";
 
-const wss = new WebSocketServer({ port: 8080 });
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({server});
 
 wss.on("connection", (ws: WebSocket) => {
   console.log("Client connected");
@@ -20,4 +23,7 @@ wss.on("connection", (ws: WebSocket) => {
     console.error("WebSocket error:", err);
     reple.close();
   });
+});
+server.listen(8080, () => {
+  console.log("Server is listening on port 8080");
 });
