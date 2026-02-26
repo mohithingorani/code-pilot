@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { Language } from "./types.js";
 import crypto from "crypto";
-import { restoreProject, uploadFile } from "./utils/s3.js";
+import { deleteFile, restoreProject, uploadFile } from "./utils/s3.js";
 
 class Reple {
   user: WebSocket;
@@ -151,6 +151,18 @@ class Reple {
 syncFilesToDisk = async (files: { name: string; content: string }[]) => {
   console.log("Files syncing started");
 
+  const incomingFiles = new Set(files.map((file)=>file.name))
+  const existingFiles = this.readProjectFiles(this.hostDirectory).map((file)=>file.name);
+
+  for (const existingFile of existingFiles){
+    if(!incomingFiles.has(existingFile)){
+      const filePath = path.join(this.hostDirectory,existingFile);
+      console.log("Deleting removed filed : ",existingFile);
+      await fs.promises.unlink(filePath);
+      await deleteFile(this.projectId,existingFile);
+    }
+  }
+
   for (const file of files) {
     const filePath = path.join(this.hostDirectory, file.name);
 
@@ -159,17 +171,15 @@ syncFilesToDisk = async (files: { name: string; content: string }[]) => {
     let shouldUpload = true;
 
     try {
-      // Check if file already exists
       const existingContent = await fs.promises.readFile(filePath, "utf-8");
 
       const existingHash = this.getHash(existingContent);
       const newHash = this.getHash(file.content);
 
       if (existingHash === newHash) {
-        shouldUpload = false; // No change
+        shouldUpload = false; 
       }
     } catch {
-      // File does not exist yet → must upload
       shouldUpload = true;
     }
 

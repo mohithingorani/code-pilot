@@ -50,6 +50,7 @@ export async function deleteFile(projectId: string, fileName: string) {
       Key: `projects/${projectId}/${fileName}`,
     }),
   );
+  console.log("Deleted from s3",fileName);
 }
 
 export async function restoreProject(projectId: string, baseFolder: string) {
