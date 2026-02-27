@@ -109,6 +109,7 @@ class Reple {
   };
 
   startContainer = () => {
+    
     this.shell = pty.spawn(
       "docker",
       [

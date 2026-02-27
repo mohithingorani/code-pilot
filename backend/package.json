@@ -6,8 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-     "dev": "tsx watch src/server.ts",
- 
+    "dev": "tsx watch src/server.ts",
     "format": "prettier --write ."
   },
   "keywords": [],
@@ -18,13 +17,16 @@
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/ws": "^8.18.1",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "node-pty": "^1.1.0",
     "pg": "^8.19.0",
-    "ws": "^8.19.0"
+    "ws": "^8.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
