@@ -1,5 +1,5 @@
 import WebSocket from "ws";
-import pty from "node-pty";
+import * as pty from "node-pty";
 import path from "path";
 import fs from "fs";
 import { Language } from "./types";

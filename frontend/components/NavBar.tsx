@@ -14,7 +14,8 @@ export default function NavBar() {
       </div>
 
       <div className="h-full text-white">
-        <button className="absolute z-0 h-full bg-[#142E38] flex justify-center items-center px-6 sm:px-10 top-0 right-0 w-fit rounded-bl-xl gap-3">
+        <a href="/join">
+        <button  className="absolute z-0 h-full bg-[#142E38] flex justify-center items-center px-6 sm:px-10 top-0 right-0 w-fit rounded-bl-xl gap-3">
           <div>
             <Image
               src="/navbar/profile.svg"
@@ -25,6 +26,7 @@ export default function NavBar() {
           </div>
           <div>Join Now</div>
         </button>
+        </a>
       </div>
     </div>
   );
