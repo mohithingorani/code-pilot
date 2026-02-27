@@ -1,22 +1,26 @@
 "use client";
 import Image from "next/image";
 import { useState } from "react";
-import { FormType } from "../types";
+import { FormType } from "../../types";
 import axios from "axios";
-
 
 export default function SignupUI() {
 
   const [formType, setFormType] = useState<FormType>(FormType.SIGNUP);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   async function handleSubmit(e:any) {
     e.preventDefault();
     if (formType === FormType.SIGNUP) {
 
       const signup = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/signup`, { email, password });
-      console.log(signup.data);
+      if (signup.status === 201) {
+        console.log("Signup successful:", signup.data);
+        localStorage.setItem("token", signup.data.token);
+        // Redirect or /dashboard
+        window.location.href = "/dashboard";
+      }
+
     }
     
   }

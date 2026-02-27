@@ -2,13 +2,13 @@
 import Editor from "@monaco-editor/react";
 import { useEffect, useRef, useState } from "react";
 import type { editor as MonacoEditor } from "monaco-editor";
-import XTerminal from "./components/Terminal";
-import { useSocket } from "./hooks/websocket";
+import XTerminal from "../components/Terminal";
+import { useSocket } from "../hooks/websocket";
 import Image from "next/image";
-import { EDITOR_ICONS } from "./data";
-import { HeadingTabs } from "./components/HeadingTabs";
-import getLanguageFromFileName from "./utils/languageSupport";
-import FileStructure from "./components/FileStructure";
+import { EDITOR_ICONS } from "../data";
+import { HeadingTabs } from "../components/HeadingTabs";
+import getLanguageFromFileName from "../utils/languageSupport";
+import FileStructure from "../components/FileStructure";
 
 const Home = () => {
   const { socket, connected } = useSocket();
