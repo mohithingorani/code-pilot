@@ -1,16 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import DotBackground from "@/components/DotBackground";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -24,10 +15,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-[url('/wall2.png')] antialiased bg-cover bg-no-repeat bg-center h-screen w-screen overflow-hidden`}
-      >
-        {children}
+       <body >
+        
+        <div className="fixed inset-0 -z-10">
+          <DotBackground />
+        </div>
+
+        {/* Content */}
+        <main className="min-h-screen">
+          {children}
+        </main>
+
       </body>
     </html>
   );

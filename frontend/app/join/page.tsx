@@ -22,7 +22,6 @@ export default function SignupUI() {
       }
 
     }
-    
   }
 
   return (
@@ -44,8 +43,6 @@ export default function SignupUI() {
               }
             </p>
           </div>
-
-
 
           <div className="space-y-4">
             <input

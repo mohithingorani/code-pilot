@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-export default function XTerminal({socket}:{socket:WebSocket}) {
+export default function XTerminal({socket}:{socket:WebSocket | null}) {
   const terminalRef = useRef<HTMLDivElement | null>(null);
 
 

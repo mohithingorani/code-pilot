@@ -3,6 +3,24 @@
 button {
   cursor: pointer;
 }
+
+:root {
+  --mouse-x: 50%;
+  --mouse-y: 50%;
+}
+
+.dot-mask {
+  mask-image: radial-gradient(
+    300px circle at var(--mouse-x) var(--mouse-y),
+    black,
+    transparent
+  );
+  -webkit-mask-image: radial-gradient(
+    300px circle at var(--mouse-x) var(--mouse-y),
+    black,
+    transparent
+  );
+}
 /* :root {
   --background: #ffffff;
   --foreground: #171717;

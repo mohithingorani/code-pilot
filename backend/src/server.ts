@@ -11,7 +11,7 @@ const wss = new WebSocketServer({server});
 wss.on("connection", (ws: WebSocket) => {
   console.log("Client connected");
 
-  const reple = new Reple(ws, Language.JAVASCRIPT,"mohit-project");
+  const reple = new Reple(ws, Language.PYTHON,"mohit-project");
   reple.init();
 
   ws.on("close", () => {
