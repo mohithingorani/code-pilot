@@ -138,7 +138,7 @@ const Home = () => {
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center px-4 py-8 sm:px-6 sm:py-12">
-      <div className="w-full max-w-6xl h-[90dvh] rounded-2xl overflow-hidden border border-white/10 bg-neutral-950/55 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
+      <div className="w-full max-w-6xl h-[90dvh] rounded-2xl  border border-white/10 bg-neutral-950/55 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
         {/* subtle overlay to keep text readable on bright backgrounds */}
         <div className="h-full w-full bg-linear-to-b from-black/10 via-black/10 to-black/25">
           <div className="h-full grid grid-cols-1 md:grid-cols-[320px_1fr]">
@@ -196,8 +196,8 @@ const Home = () => {
               />
 
               {/* Editor + terminal drawer */}
-              <div className="flex-1 min-h-0 grid grid-rows-[1fr_auto]">
-                <div className="min-h-0 bg-[#141414]">
+              <div className="flex grow justify-end flex-col">
+                <div className="h-full bg-[#141414]">
                   <Editor
                     options={{
                       wordWrap: "on",
@@ -233,7 +233,7 @@ const Home = () => {
                   </div>
 
                   <div className="h-56 sm:h-64 px-3 sm:px-4 pb-3">
-                    <div className="h-full p-2 w-full rounded-lg border border-white/10 bg-black/40 overflow-hidden">
+                    <div className="h-full p-2 w-full rounded-lg border border-white/10 bg-black/40">
                       <XTerminal socket={socket} />
                     </div>
                   </div>

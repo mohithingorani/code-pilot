@@ -9,17 +9,16 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
   const startupFlushTimerRef = useRef<number | null>(null);
 
 
-  // const scrollToBottom = () => {
-  //   if(!terminalRef.current) return;
-  //   terminalRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-  // };
+  const scrollToBottom = () => {
+    if(!terminalRef.current) return;
+    terminalRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
 
 
   useEffect(() => {
     let term: import("xterm").Terminal | null = null;
     let fitAddon: import("xterm-addon-fit").FitAddon | null = null;
     let dispose = false;
-
     const init = async () => {
       const { Terminal } = await import("xterm");
       const { FitAddon } = await import("xterm-addon-fit");
