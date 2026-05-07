@@ -10,6 +10,8 @@ interface FileStructureProps {
   selected: number;
   removeFile: (name: string) => void;
   addFolder?: (name: string) => void;
+  splitFileIndex?: number | null;
+  onSplitFileClick?: (index: number) => void;
 }
 
 export default function FileStructure({
@@ -18,6 +20,8 @@ export default function FileStructure({
   selected,
   removeFile,
   addFolder,
+  splitFileIndex,
+  onSplitFileClick,
 }: FileStructureProps) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
 
@@ -104,6 +108,8 @@ export default function FileStructure({
         className={`flex group items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${
           flatIndex === selected
             ? "bg-white/10 border-l-2 border-sky-400/70 text-white"
+            : flatIndex === splitFileIndex
+            ? "bg-blue-500/10 border-l-2 border-blue-400/70 text-blue-300"
             : "border-l-2 border-transparent text-white/85 hover:bg-white/10"
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
@@ -116,6 +122,9 @@ export default function FileStructure({
           className="shrink-0 opacity-90"
         />
         <span className="whitespace-nowrap flex-1 min-w-0">{node.name}</span>
+        {splitFileIndex !== null && splitFileIndex !== undefined && flatIndex === splitFileIndex && (
+          <span className="text-[10px] bg-blue-500/30 px-1.5 py-0.5 rounded text-blue-300">Split</span>
+        )}
         <Image
           onClick={(e) => {
             e.stopPropagation();
