@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "xterm/css/xterm.css";
 import DotBackground from "@/components/DotBackground";
 
 

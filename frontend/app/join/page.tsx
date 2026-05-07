@@ -9,7 +9,7 @@ export default function SignupUI() {
   const [formType, setFormType] = useState<FormType>(FormType.SIGNUP);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  async function handleSubmit(e:any) {
+  async function handleSubmit(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     if (formType === FormType.SIGNUP) {
 

@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/*
+ * xterm's DOM includes a measurement span filled with "W" characters.
+ * If xterm's default CSS is missing/overridden, it can accidentally render
+ * in the normal flow above the prompt. Keep it offscreen and invisible.
+ */
+.xterm .xterm-helpers {
+  position: absolute;
+}
+
+.xterm .xterm-helpers .xterm-char-measure-element {
+  position: absolute !important;
+  top: 0 !important;
+  left: -9999px !important;
+  visibility: hidden !important;
+}
+
 button {
   cursor: pointer;
 }

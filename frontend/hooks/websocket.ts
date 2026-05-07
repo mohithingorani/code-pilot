@@ -8,10 +8,10 @@ export const useSocket = () => {
 
   useEffect(() => {
     const ws = new WebSocket(WS_URL);
-    setSocket(ws);
 
     ws.onopen = () => {
       console.log("WebSocket connected");
+      setSocket(ws);
       setConnected(true);
     };
 

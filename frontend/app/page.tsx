@@ -36,7 +36,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-lg md:text-xl text-gray-400 mb-12 max-w-2xl leading-relaxed"
           >
-            Code Pilot is the world's most advanced real-time collaborative IDE 
+            Code Pilot is the world&apos;s most advanced real-time collaborative IDE
             with integrated AI that actually understands your intent.
           </motion.p>
 

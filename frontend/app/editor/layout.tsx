@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import '../globals.css'
-import { div } from "framer-motion/client";
 
 
 
@@ -15,11 +13,8 @@ export default function EditorLayout({
   children: React.ReactNode;
 }>) {
   return (
-   
-       <div className={`bg-[url('/wall2.png')] antialiased bg-cover bg-no-repeat bg-center h-screen w-screen overflow-hidden`}
-      >
-        {children}
-        </div>
-   
+    <div className="bg-[url('/wall2.png')] antialiased bg-cover bg-no-repeat bg-center h-screen w-screen overflow-hidden">
+      {children}
+    </div>
   );
 }
