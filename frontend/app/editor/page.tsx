@@ -168,7 +168,7 @@ const Home = () => {
             {/* Main */}
             <section className="flex flex-col min-w-0">
               {/* Top bar (mobile controls + title) */}
-              <div className="flex items-center justify-between px-3 sm:px-4 py-3 border-b border-white/10 text-white">
+              <div className="flex h-12 items-center justify-between px-3 sm:px-4 py-3 border-b border-white/10 text-white">
                 <div className="flex items-center gap-2 min-w-0">
                   <button
                     className="md:hidden px-2 py-1.5 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
@@ -188,12 +188,13 @@ const Home = () => {
 
                 <div className="flex items-center gap-2" />
               </div>
-
+<div className="h-10">
               <HeadingTabs
                 selectedFile={selectedFileIndex}
                 files={files}
                 onClick={handleClick}
               />
+              </div>
 
               {/* Editor + terminal drawer */}
               <div className="flex grow justify-end flex-col">
@@ -227,7 +228,7 @@ const Home = () => {
                 </div>
 
                 {/* Terminal area */}
-                <div className="relative z-10 border-t border-white/10 bg-black/35 backdrop-blur-xl">
+                <div className="border-t border-white/10 bg-black/35 backdrop-blur-xl">
                   <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-white/80">
                     <div className="text-xs">Terminal</div>
                   </div>
