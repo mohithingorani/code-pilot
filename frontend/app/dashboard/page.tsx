@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useDashboardSettings } from "@/hooks/useDashboardSettings";
+import SettingsModal from "@/components/SettingsModal";
 
 interface Project {
   id: string;
@@ -58,6 +60,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<"lastEditedAt" | "name" | "createdAt">("lastEditedAt");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const { settings: dashboardSettings, updateSettings } = useDashboardSettings();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -548,29 +551,12 @@ export default function Dashboard() {
       )}
 
       {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-white/5 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold text-white">Settings</h2>
-                <p className="text-gray-500 text-sm mt-1">Manage your preferences</p>
-              </div>
-              <button onClick={() => setShowSettings(false)} className="p-2.5 rounded-xl hover:bg-white/5 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6 border-t border-white/5">
-              <button onClick={() => setShowSettings(false)} className="w-full px-4 py-3 rounded-xl bg-white text-black font-medium hover:bg-gray-100 transition">
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={dashboardSettings}
+        onUpdate={updateSettings}
+      />
 
       {openMenuId && (
         <div ref={menuRef} />
