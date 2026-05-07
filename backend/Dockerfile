@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g typescript ts-node tsx
+RUN npm install -g typescript@4.5.5 ts-node@8 tsx
 RUN pip3 install black flake8 mypy
 
 RUN ln -sf /usr/bin/python3 /usr/bin/python

@@ -72,6 +72,9 @@ class Reple {
   private readProjectFiles = (
     dir: string,
   ): { name: string; content: string }[] => {
+    if (!fs.existsSync(dir)) {
+      return [];
+    }
     const result: { name: string; content: string }[] = [];
 
     const walk = (currentPath: string) => {
@@ -110,28 +113,33 @@ class Reple {
   };
 
   init = async () => {
-    await fs.promises.mkdir(this.hostDirectory, { recursive: true });
-    console.log(`Created temp folder: ${this.hostDirectory}`);
+    try {
+      await fs.promises.mkdir(this.hostDirectory, { recursive: true });
+      console.log(`Created temp folder: ${this.hostDirectory}`);
 
-    await restoreProject(this.projectId, this.hostDirectory);
+      await restoreProject(this.projectId, this.hostDirectory);
 
-    const existing = fs.readdirSync(this.hostDirectory);
+      const existing = fs.readdirSync(this.hostDirectory);
 
-    if (existing.length == 0) {
-      const templateFolder = TEMPLATE_MAP[this.projectLanguage] || this.projectLanguage;
-      const templatePath = path.join(process.cwd(), "templates", templateFolder);
-      fs.cpSync(templatePath, this.hostDirectory, { recursive: true });
+      if (existing.length == 0) {
+        const templateFolder = TEMPLATE_MAP[this.projectLanguage] || this.projectLanguage;
+        const templatePath = path.join(process.cwd(), "templates", templateFolder);
+        fs.cpSync(templatePath, this.hostDirectory, { recursive: true });
+      }
+
+      const files = this.readProjectFiles(this.hostDirectory);
+      this.sendMessage(
+        JSON.stringify({
+          type: "files",
+          payload: { files },
+        }),
+      );
+
+      this.startContainer();
+    } catch (err) {
+      console.error("Init error:", err);
+      this.close();
     }
-
-    const files = this.readProjectFiles(this.hostDirectory);
-    this.sendMessage(
-      JSON.stringify({
-        type: "files",
-        payload: { files },
-      }),
-    );
-
-    this.startContainer();
   };
 
   startContainer = () => {
@@ -234,8 +242,10 @@ class Reple {
     }
 
     try {
-      await fs.promises.rm(this.hostDirectory, { recursive: true, force: true });
-      console.log(`Deleted temp folder: ${this.hostDirectory}`);
+      if (fs.existsSync(this.hostDirectory)) {
+        await fs.promises.rm(this.hostDirectory, { recursive: true, force: true });
+        console.log(`Deleted temp folder: ${this.hostDirectory}`);
+      }
     } catch (err) {
       console.error("Error cleaning temp folder:", err);
     }
