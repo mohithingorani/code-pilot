@@ -8,11 +8,13 @@ import app from "./app";
 const server = http.createServer(app);
 const wss = new WebSocketServer({server});
 
-wss.on("connection", (ws: WebSocket) => {
+wss.on("connection", (ws: WebSocket, req) => {
   console.log("Client connected");
 
-  const reple = new Reple(ws, Language.PYTHON,"mohit-project");
-  reple.init();
+  const url = new URL(req.url || "", `http://${req.headers.host}`);
+  const projectId = url.searchParams.get("projectId") || undefined;
+
+  const reple = new Reple(ws, Language.PYTHON, projectId);
 
   ws.on("close", () => {
     console.log("Client disconnected");
@@ -24,6 +26,7 @@ wss.on("connection", (ws: WebSocket) => {
     reple.close();
   });
 });
+
 server.listen(8080, () => {
   console.log("Server is listening on port 8080");
 });
