@@ -19,7 +19,7 @@ interface UseEditorShortcutsOptions {
   setShowNewFileModal: (show: boolean) => void;
   setShowSettings: (show: boolean) => void;
   setShowShortcuts: (show: boolean) => void;
-  setEditorSettings: React.Dispatch<React.SetStateAction<{
+  setEditorSettings: (updater: React.SetStateAction<{
     minimap: boolean;
     lineNumbers: boolean;
     wordWrap: boolean;
@@ -27,7 +27,8 @@ interface UseEditorShortcutsOptions {
     tabSize: number;
     smoothCaret: boolean;
     autoSave: boolean;
-  }>>;
+    autoSaveDelay: number;
+  }>) => void;
   handleRun: () => void;
 }
 

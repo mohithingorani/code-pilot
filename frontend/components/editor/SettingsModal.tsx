@@ -8,13 +8,14 @@ interface EditorSettings {
   tabSize: number;
   smoothCaret: boolean;
   autoSave: boolean;
+  autoSaveDelay: number;
 }
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   settings: EditorSettings;
-  onSettingsChange: (settings: EditorSettings) => void;
+  onSettingsChange: (updater: EditorSettings | ((prev: EditorSettings) => EditorSettings)) => void;
 }
 
 export default function SettingsModal({ isOpen, onClose, settings, onSettingsChange }: SettingsModalProps) {
@@ -22,8 +23,15 @@ export default function SettingsModal({ isOpen, onClose, settings, onSettingsCha
 
   const toggle = (key: keyof EditorSettings) => {
     if (typeof settings[key] === "boolean") {
-      onSettingsChange({ ...settings, [key]: !settings[key] });
+      onSettingsChange((prev: EditorSettings) => {
+        const updated = { ...prev, [key]: !prev[key as keyof EditorSettings] };
+        return updated;
+      });
     }
+  };
+
+  const updateSetting = (key: keyof EditorSettings, value: number) => {
+    onSettingsChange((prev: EditorSettings) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -71,7 +79,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSettingsCha
             value={settings.fontSize}
             min={12}
             max={24}
-            onChange={(val) => onSettingsChange({ ...settings, fontSize: val })}
+            onChange={(val) => updateSetting("fontSize", val)}
           />
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -81,7 +89,7 @@ export default function SettingsModal({ isOpen, onClose, settings, onSettingsCha
               {[2, 4].map(size => (
                 <button
                   key={size}
-                  onClick={() => onSettingsChange({ ...settings, tabSize: size })}
+                  onClick={() => updateSetting("tabSize", size)}
                   className={`flex-1 py-2 rounded-lg text-sm transition ${
                     settings.tabSize === size 
                       ? "bg-white text-black" 

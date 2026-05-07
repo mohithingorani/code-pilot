@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export interface EditorSettings {
   minimap: boolean;
@@ -10,18 +10,34 @@ export interface EditorSettings {
   tabSize: number;
   smoothCaret: boolean;
   autoSave: boolean;
+  autoSaveDelay: number;
 }
 
+const DEFAULT_SETTINGS: EditorSettings = {
+  minimap: false,
+  lineNumbers: true,
+  wordWrap: true,
+  fontSize: 14,
+  tabSize: 2,
+  smoothCaret: true,
+  autoSave: true,
+  autoSaveDelay: 800,
+};
+
 export function useEditorSettings() {
-  const [settings, setSettings] = useState<EditorSettings>({
-    minimap: false,
-    lineNumbers: true,
-    wordWrap: true,
-    fontSize: 14,
-    tabSize: 2,
-    smoothCaret: true,
-    autoSave: true,
-  });
+  const [settings, setSettings] = useState<EditorSettings>(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("dashboard-settings");
+    if (stored) {
+      const dashboard = JSON.parse(stored);
+      setSettings(prev => ({
+        ...prev,
+        fontSize: dashboard.editorFontSize || 14,
+        autoSaveDelay: dashboard.autoSaveDelay || 800,
+      }));
+    }
+  }, []);
 
   const getEditorOptions = useCallback(() => ({
     wordWrap: settings.wordWrap ? ("on" as const) : ("off" as const),

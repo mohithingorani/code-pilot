@@ -7,7 +7,7 @@ import getLanguageFromFileName from "@/utils/languageSupport";
 import FileStructure from "@/components/FileStructure";
 import { HeadingTabs } from "@/components/HeadingTabs";
 import XTerminal from "@/components/Terminal";
-import { RUN_COMMANDS } from "@/constants/editor";
+
 import { useEditorShortcuts } from "@/hooks/useEditorShortcuts";
 import { useEditorSettings } from "@/hooks/useEditorSettings";
 import EditorOptions from "@/components/editor/EditorOptions";
@@ -53,6 +53,7 @@ export default function EditorPage() {
   const [newFileName, setNewFileName] = useState("");
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
+  const [loading, setLoading] = useState(true);
 
   const { settings, setSettings, getEditorOptions } = useEditorSettings();
 
@@ -74,14 +75,32 @@ export default function EditorPage() {
     if (!socket || !currentLanguage || !files[selectedFileIndex]) return;
     const fileName = files[selectedFileIndex].name;
     const baseName = fileName.replace(/\.[^.]+$/, "");
-    const command = RUN_COMMANDS[currentLanguage]?.replace("main.cpp", fileName).replace("main", baseName)
-      || (currentLanguage === "python" ? `python3 ${fileName}`
-      : currentLanguage === "javascript" ? `node ${fileName}`
-      : currentLanguage === "typescript" ? `npx ts-node ${fileName}`
-      : currentLanguage === "java" ? `javac ${fileName} && java ${baseName}`
-      : currentLanguage === "cpp" ? `g++ ${fileName} -o ${baseName} && ./${baseName}`
-      : currentLanguage === "markdown" ? `cat ${fileName}` : `./${fileName}`);
-    socket.send(JSON.stringify({ type: "terminal", payload: { data: `\r${command}\r` } }));
+    let command: string;
+
+    switch (currentLanguage) {
+      case "python":
+        command = `python3 "${fileName}"`;
+        break;
+      case "javascript":
+        command = `node "${fileName}"`;
+        break;
+case "typescript":
+        command = 'cd /workspace && npm install typescript@4.5 ts-node@8 > /dev/null 2>&1 && ./node_modules/.bin/ts-node --transpile-only "' + fileName + '"';
+        break;
+      case "java":
+        command = `javac "${fileName}" && java "${baseName}"`;
+        break;
+      case "cpp":
+        command = `g++ "${fileName}" -o "${baseName}" && ./"${baseName}"`;
+        break;
+      case "markdown":
+        command = `cat "${fileName}"`;
+        break;
+      default:
+        command = `python3 "${fileName}"`;
+    }
+
+    socket.send(JSON.stringify({ type: "terminal", payload: { data: `${command}\n` } }));
   };
 
   useEditorShortcuts({
@@ -111,7 +130,7 @@ export default function EditorPage() {
       setSaveStatus("saving");
       socket.send(JSON.stringify({ type: "files", payload: { files: updatedFiles } }));
       setTimeout(() => setSaveStatus("saved"), 500);
-    }, settings.autoSave ? 800 : 0);
+    }, settings.autoSave ? settings.autoSaveDelay : 0);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [currentVal]);
 
@@ -185,6 +204,7 @@ export default function EditorPage() {
         if (parsed.type === "files") {
           const newFiles = parsed.payload.files as { name: string; content: string }[];
           setFiles(newFiles);
+          setLoading(false);
           if (newFiles.length > 0) {
             setCurrentVal(newFiles[0].content);
             setSelectedFileIndex(0);
@@ -200,6 +220,14 @@ export default function EditorPage() {
   return (
     <div className="w-full min-h-screen flex justify-center items-center px-4 py-8 sm:px-6 sm:py-12">
       <div className="w-full max-w-6xl h-[90dvh] rounded-2xl border border-white/10 bg-neutral-950/55 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80 backdrop-blur-sm rounded-2xl z-20">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              <span className="text-sm text-white/60">Loading workspace...</span>
+            </div>
+          </div>
+        )}
         <div className="h-full w-full bg-linear-to-b from-black/10 via-black/10 to-black/25">
           <div className="h-full grid grid-cols-1 md:grid-cols-[320px_1fr]">
             <aside className="hidden md:flex flex-col text-white border-r border-white/10">
