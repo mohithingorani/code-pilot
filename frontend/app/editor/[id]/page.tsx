@@ -1,14 +1,20 @@
 "use client";
 import Editor from "@monaco-editor/react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { editor as MonacoEditor } from "monaco-editor";
 import { useSocket } from "@/hooks/websocket";
-import getLanguageFromFileName, { getLanguageExtension } from "@/utils/languageSupport";
+import getLanguageFromFileName from "@/utils/languageSupport";
 import FileStructure from "@/components/FileStructure";
 import { HeadingTabs } from "@/components/HeadingTabs";
 import XTerminal from "@/components/Terminal";
-import { EDITOR_ICONS } from "@/data";
-import Image from "next/image";
+import { RUN_COMMANDS } from "@/constants/editor";
+import { useEditorShortcuts } from "@/hooks/useEditorShortcuts";
+import { useEditorSettings } from "@/hooks/useEditorSettings";
+import EditorOptions from "@/components/editor/EditorOptions";
+import NewFileModal from "@/components/editor/NewFileModal";
+import SettingsModal from "@/components/editor/SettingsModal";
+import ShortcutsModal from "@/components/editor/ShortcutsModal";
+import SplitEditor from "@/components/editor/SplitEditor";
 import { useParams } from "next/navigation";
 import axios from "axios";
 
@@ -20,148 +26,98 @@ interface Project {
   status: "active" | "idle";
 }
 
-const RUN_COMMANDS: Record<string, string> = {
-  python: "python3",
-  javascript: "node",
-  typescript: "npx ts-node",
-  java: "javac && java",
-  cpp: "g++ main.cpp -o main && ./main",
-  markdown: "cat",
-};
-
-const Home = () => {
+export default function EditorPage() {
   const params = useParams();
   const projectId = params.id as string;
 
   const [editorKey, setEditorKey] = useState(0);
-
-  useEffect(() => {
-    setEditorKey((k) => k + 1);
-  }, [projectId]);
+  useEffect(() => setEditorKey(k => k + 1), [projectId]);
 
   const { socket, connected } = useSocket(projectId);
 
-  const [currentVal, setCurrentVal] = useState<string | null>(null);
   const editorRef = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const editor2Ref = useRef<MonacoEditor.IStandaloneCodeEditor | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [files, setFiles] = useState<{ name: string; content: string }[]>([]);
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [splitFileIndex, setSplitFileIndex] = useState<number | null>(null);
+  const [currentVal, setCurrentVal] = useState<string | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState<string>("");
   const [project, setProject] = useState<Project | null>(null);
+
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [showNewFileModal, setShowNewFileModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { settings, setSettings, getEditorOptions } = useEditorSettings();
 
   useEffect(() => {
     if (projectId) {
       axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${projectId}`)
-        .then((res) => setProject(res.data))
+        .then(res => setProject(res.data))
         .catch(console.error);
     }
   }, [projectId]);
 
   useEffect(() => {
     if (socket && connected && project) {
-      console.log("Sending init with language:", project.language);
-      socket.send(JSON.stringify({
-        type: "init",
-        payload: { language: project.language },
-      }));
+      socket.send(JSON.stringify({ type: "init", payload: { language: project.language } }));
     }
   }, [socket, connected, project]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        if (sidebarOpenMobile) {
-          setSidebarOpenMobile(false);
-        }
-        if (showNewFileModal) {
-          setShowNewFileModal(false);
-          setNewFileName("");
-        }
-      }
+  const handleRun = () => {
+    if (!socket || !currentLanguage || !files[selectedFileIndex]) return;
+    const fileName = files[selectedFileIndex].name;
+    const baseName = fileName.replace(/\.[^.]+$/, "");
+    const command = RUN_COMMANDS[currentLanguage]?.replace("main.cpp", fileName).replace("main", baseName)
+      || (currentLanguage === "python" ? `python3 ${fileName}`
+      : currentLanguage === "javascript" ? `node ${fileName}`
+      : currentLanguage === "typescript" ? `npx ts-node ${fileName}`
+      : currentLanguage === "java" ? `javac ${fileName} && java ${baseName}`
+      : currentLanguage === "cpp" ? `g++ ${fileName} -o ${baseName} && ./${baseName}`
+      : currentLanguage === "markdown" ? `cat ${fileName}` : `./${fileName}`);
+    socket.send(JSON.stringify({ type: "terminal", payload: { data: `\r${command}\r` } }));
+  };
 
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        if (socket && files.length > 0) {
-          setSaveStatus("saving");
-          socket.send(
-            JSON.stringify({
-              type: "files",
-              payload: { files },
-            }),
-          );
-          setTimeout(() => setSaveStatus("saved"), 500);
-        }
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleRun();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [socket, files, sidebarOpenMobile, showNewFileModal]);
-
-  function handleEditorDidMount(
-    editor: MonacoEditor.IStandaloneCodeEditor,
-    _monaco: typeof import("monaco-editor"),
-  ) {
-    void _monaco;
-    editorRef.current = editor;
-  }
-
-  function handleEditorDidChange(value: string | undefined) {
-    if (!value || !socket) return;
-    setCurrentVal(value);
-  }
+  useEditorShortcuts({
+    socket,
+    files,
+    editorRef,
+    sidebarOpenMobile,
+    showNewFileModal,
+    showSettings,
+    showShortcuts,
+    editorSettings: { autoSave: settings.autoSave },
+    setSaveStatus,
+    setSidebarOpenMobile,
+    setShowNewFileModal,
+    setShowSettings,
+    setShowShortcuts,
+    setEditorSettings: setSettings,
+    handleRun,
+  });
 
   useEffect(() => {
     if (!connected || !socket || !files.length) return;
-
-    const updatedFiles = files.map((file, index) => {
-      if (index === selectedFileIndex) {
-        return {
-          ...file,
-          content: currentVal?.endsWith("\n") ? currentVal : currentVal + "\n",
-        };
-      }
-      return file;
-    });
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
+    const updatedFiles = files.map((file, i) => i === selectedFileIndex ? { ...file, content: currentVal?.endsWith("\n") ? currentVal : (currentVal || "") + "\n" } : file);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     setSaveStatus("unsaved");
-
     saveTimeoutRef.current = setTimeout(() => {
       setSaveStatus("saving");
-      socket.send(
-        JSON.stringify({
-          type: "files",
-          payload: { files: updatedFiles },
-        }),
-      );
+      socket.send(JSON.stringify({ type: "files", payload: { files: updatedFiles } }));
       setTimeout(() => setSaveStatus("saved"), 500);
-    }, 800);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
+    }, settings.autoSave ? 800 : 0);
+    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
   }, [currentVal]);
 
   const handleEditorWillMount = (monaco: typeof import("monaco-editor")) => {
     monaco.editor.defineTheme("my-custom-theme", {
-      base: "vs-dark",
-      inherit: true,
+      base: "vs-dark", inherit: true,
       rules: [
         { token: "", foreground: "FFFFFF", background: "222222" },
         { token: "keyword", foreground: "569CD6" },
@@ -170,109 +126,65 @@ const Home = () => {
         { token: "number", foreground: "B5CEA8" },
         { token: "comment", foreground: "6A9955", fontStyle: "italic" },
       ],
-      colors: {
-        "editor.background": "#141414",
-      },
+      colors: { "editor.background": "#141414" },
     });
   };
 
-  const handleRemovFile = (name: string) => {
-    const newFiles = files.filter((file) => file.name !== name);
+  const handleRemoveFile = (name: string) => {
+    const newFiles = files.filter(f => f.name !== name);
     setFiles(newFiles);
-
     if (selectedFileIndex >= newFiles.length) {
-      const nextIndex = Math.max(0, newFiles.length - 1);
-      setSelectedFileIndex(nextIndex);
-      setCurrentVal(newFiles[nextIndex]?.content ?? null);
-      setCurrentLanguage(
-        newFiles[nextIndex] ? getLanguageFromFileName(newFiles[nextIndex].name) : "",
-      );
+      const next = Math.max(0, newFiles.length - 1);
+      setSelectedFileIndex(next);
+      setCurrentVal(newFiles[next]?.content ?? null);
+      setCurrentLanguage(newFiles[next] ? getLanguageFromFileName(newFiles[next].name) : "");
     }
+    if (splitFileIndex !== null && splitFileIndex >= newFiles.length) setSplitFileIndex(Math.max(0, newFiles.length - 1));
   };
 
   const handleAddFile = () => {
     if (!newFileName.trim()) return;
-
     setIsCreatingFile(true);
-    const ext = getLanguageExtension(newFileName) || "";
-    const defaultContent = "";
-
-    const newFile = { name: newFileName, content: defaultContent };
+    const newFile = { name: newFileName, content: "" };
     const newFiles = [...files, newFile];
-
     setFiles(newFiles);
     setSelectedFileIndex(newFiles.length - 1);
-    setCurrentVal(defaultContent);
+    setCurrentVal("");
     setCurrentLanguage(getLanguageFromFileName(newFileName));
-
-    if (socket) {
-      socket.send(JSON.stringify({ type: "files", payload: { files: newFiles } }));
-    }
-
+    if (socket) socket.send(JSON.stringify({ type: "files", payload: { files: newFiles } }));
     setNewFileName("");
     setShowNewFileModal(false);
     setIsCreatingFile(false);
   };
 
-  const handleAddFolder = (folderName: string) => {
-    const newFiles = [...files, { name: `${folderName}/.gitkeep`, content: "" }];
+  const handleAddFolder = (name: string) => {
+    const newFiles = [...files, { name: `${name}/.gitkeep`, content: "" }];
     setFiles(newFiles);
-
-    if (socket) {
-      socket.send(JSON.stringify({ type: "files", payload: { files: newFiles } }));
-    }
+    if (socket) socket.send(JSON.stringify({ type: "files", payload: { files: newFiles } }));
   };
 
-  const handleRun = () => {
-    if (!socket || !currentLanguage) return;
-
-    const currentFile = files[selectedFileIndex];
-    if (!currentFile) return;
-
-    const fileName = currentFile.name;
-    const baseName = fileName.replace(/\.[^.]+$/, "");
-
-    let command = "";
-    switch (currentLanguage) {
-      case "python":
-        command = `python3 ${fileName}`;
-        break;
-      case "javascript":
-        command = `node ${fileName}`;
-        break;
-      case "typescript":
-        command = `npx ts-node ${fileName}`;
-        break;
-      case "java":
-        command = `javac ${fileName} && java ${baseName}`;
-        break;
-      case "cpp":
-        command = `g++ ${fileName} -o ${baseName} && ./${baseName}`;
-        break;
-      case "markdown":
-        command = `cat ${fileName}`;
-        break;
-      default:
-        command = `./${fileName}`;
-    }
-
-    socket.send(JSON.stringify({ type: "terminal", payload: { data: "\r" + command + "\r" } }));
+  const handleSplitView = () => {
+    if (splitFileIndex === null) setSplitFileIndex((selectedFileIndex + 1) % files.length);
+    else setSplitFileIndex(null);
   };
+
+  const handleFileClick = (index: number) => {
+    setSelectedFileIndex(index);
+    setCurrentVal(files[index].content);
+    setCurrentLanguage(getLanguageFromFileName(files[index].name));
+    setSidebarOpenMobile(false);
+  };
+
+  const handleSplitFileClick = (index: number) => setSplitFileIndex(index);
 
   useEffect(() => {
     if (!socket) return;
-
-    const handleMessage = (event: MessageEvent<string>) => {
+    const handler = (event: MessageEvent<string>) => {
       if (typeof event.data === "string") {
         const parsed = JSON.parse(event.data);
         if (parsed.type === "files") {
-          const newFiles = parsed.payload.files as {
-            name: string;
-            content: string;
-          }[];
-
+          const newFiles = parsed.payload.files as { name: string; content: string }[];
           setFiles(newFiles);
-
           if (newFiles.length > 0) {
             setCurrentVal(newFiles[0].content);
             setSelectedFileIndex(0);
@@ -281,137 +193,68 @@ const Home = () => {
         }
       }
     };
-    socket.addEventListener("message", handleMessage);
-
-    return () => {
-      socket.removeEventListener("message", handleMessage);
-    };
+    socket.addEventListener("message", handler);
+    return () => socket.removeEventListener("message", handler);
   }, [socket]);
-
-  function handleClick(index: number) {
-    setSelectedFileIndex(index);
-    setCurrentVal(files[index].content);
-    setCurrentLanguage(getLanguageFromFileName(files[index].name));
-    setSidebarOpenMobile(false);
-  }
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center px-4 py-8 sm:px-6 sm:py-12">
-      <div className="w-full max-w-6xl h-[90dvh] rounded-2xl  border border-white/10 bg-neutral-950/55 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
+      <div className="w-full max-w-6xl h-[90dvh] rounded-2xl border border-white/10 bg-neutral-950/55 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
         <div className="h-full w-full bg-linear-to-b from-black/10 via-black/10 to-black/25">
           <div className="h-full grid grid-cols-1 md:grid-cols-[320px_1fr]">
             <aside className="hidden md:flex flex-col text-white border-r border-white/10">
               <div className="flex items-center justify-between px-4 py-3">
-                <div className="text-sm tracking-wide text-white/80">Workspace</div>
-                <div
-                  className={`text-[11px] px-2 py-1 rounded-full border ${connected ? "border-emerald-400/30 text-emerald-200 bg-emerald-400/10" : "border-white/10 text-white/60 bg-white/5"}`}
-                >
+                <span className="text-sm tracking-wide text-white/80">Workspace</span>
+                <span className={`text-[11px] px-2 py-1 rounded-full border ${connected ? "border-emerald-400/30 text-emerald-200 bg-emerald-400/10" : "border-white/10 text-white/60 bg-white/5"}`}>
                   {connected ? "Connected" : "Connecting"}
-                </div>
+                </span>
               </div>
-              <div className="px-2">
-                <EditorOptions onAddFile={() => setShowNewFileModal(true)} />
-              </div>
+              <EditorOptions editorRef={editorRef} onAddFile={() => setShowNewFileModal(true)} onToggleSettings={() => setShowSettings(true)} onToggleShortcuts={() => setShowShortcuts(true)} />
               <div className="flex-1 overflow-auto pb-4 [scrollbar-width:thin]">
-                <FileStructure
-                  removeFile={handleRemovFile}
-                  selected={selectedFileIndex}
-                  onClick={handleClick}
-                  files={files}
-                  addFolder={handleAddFolder}
-                />
+                <FileStructure removeFile={handleRemoveFile} selected={selectedFileIndex} onClick={handleFileClick} files={files} addFolder={handleAddFolder} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
               </div>
             </aside>
 
             <section className="flex flex-col min-w-0">
               <div className="flex h-12 items-center justify-between px-3 sm:px-4 py-3 border-b border-white/10 text-white">
                 <div className="flex items-center gap-2 min-w-0">
-                  <button
-                    className="md:hidden px-2 py-1.5 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs"
-                    onClick={() => setSidebarOpenMobile(true)}
-                  >
-                    Files
-                  </button>
-                  <div className="min-w-0" title={files[selectedFileIndex]?.name ?? "Editor"}>
+                  <button className="md:hidden px-2 py-1.5 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs" onClick={() => setSidebarOpenMobile(true)}>Files</button>
+                  <div className="min-w-0">
                     <div className="text-sm font-medium flex items-center gap-2">
                       {files[selectedFileIndex]?.name ?? "Editor"}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                        saveStatus === "saved" ? "bg-emerald-500/20 text-emerald-400" :
-                        saveStatus === "saving" ? "bg-amber-500/20 text-amber-400" :
-                        "bg-white/10 text-white/60"
-                      }`}>
-                        {saveStatus === "saved" ? "Saved" :
-                         saveStatus === "saving" ? "Saving..." :
-                         "Editing"}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${saveStatus === "saved" ? "bg-emerald-500/20 text-emerald-400" : saveStatus === "saving" ? "bg-amber-500/20 text-amber-400" : "bg-white/10 text-white/60"}`}>
+                        {saveStatus === "saved" ? "Saved" : saveStatus === "saving" ? "Saving..." : "Editing"}
                       </span>
                     </div>
-                    <div className="text-[11px] text-white/60 truncate">
-                      {currentLanguage ? currentLanguage.toUpperCase() : ""}
-                    </div>
+                    <div className="text-[11px] text-white/60 truncate">{currentLanguage.toUpperCase()}</div>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleRun}
-                    className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition"
-                    title="Run code (Ctrl+Enter)"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
+                  <button onClick={handleSplitView} className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition ${splitFileIndex !== null ? "bg-white/20 text-white" : "bg-white/5 hover:bg-white/10 text-white/80 border border-white/10"}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x={3} y={3} width={18} height={18} rx={2} /><line x1={12} y1={3} x2={12} y2={21} /></svg>
+                    Split
+                  </button>
+                  <button onClick={handleRun} className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition" title="Run code (Ctrl+Enter)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                     Run
                   </button>
                 </div>
               </div>
               <div className="h-10">
-              <HeadingTabs
-                selectedFile={selectedFileIndex}
-                files={files}
-                onClick={handleClick}
-              />
+                <HeadingTabs selectedFile={selectedFileIndex} files={files} onClick={handleFileClick} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
               </div>
 
               <div className="flex grow justify-end flex-col">
-                <div className="h-full bg-[#141414]">
-                  <Editor
-                    key={editorKey}
-                    options={{
-                      wordWrap: "on",
-                      automaticLayout: true,
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      lineHeight: 22,
-                      padding: { top: 14, bottom: 14 },
-                      smoothScrolling: true,
-                      cursorSmoothCaretAnimation: "on",
-                      renderLineHighlight: "gutter",
-                      scrollbar: {
-                        verticalScrollbarSize: 10,
-                        horizontalScrollbarSize: 10,
-                      },
-                      overviewRulerBorder: false,
-                    }}
-                    onChange={handleEditorDidChange}
-                    beforeMount={handleEditorWillMount}
-                    height={"100%"}
-                    className="w-full"
-                    value={currentVal || ""}
-                    language={currentLanguage}
-                    theme="my-custom-theme"
-                    onMount={handleEditorDidMount}
-                  />
-                </div>
-
-                <div className="border-t border-white/10 bg-black/35 backdrop-blur-xl">
-                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-white/80">
-                    <div className="text-xs">Terminal</div>
+                <div className="h-full bg-[#141414] flex">
+                  <div className="flex-1 min-w-0">
+                    <Editor key={`main-${editorKey}`} options={getEditorOptions()} onChange={val => { if (val) setCurrentVal(val); }} beforeMount={handleEditorWillMount} height="100%" className="w-full" value={currentVal || ""} language={currentLanguage} theme="my-custom-theme" onMount={(e) => { editorRef.current = e; }} />
                   </div>
-
+                  {splitFileIndex !== null && <SplitEditor files={files} splitFileIndex={splitFileIndex} editorKey={String(editorKey)} editorOptions={getEditorOptions()} onMount={(e) => { editor2Ref.current = e; }} />}
+                </div>
+                <div className="border-t border-white/10 bg-black/35 backdrop-blur-xl">
+                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-white/80"><span className="text-xs">Terminal</span></div>
                   <div className="h-56 sm:h-64 px-3 sm:px-4 pb-3">
-                    <div className="h-full p-2 w-full rounded-lg border border-white/10 bg-black/40">
-                      <XTerminal socket={socket} />
-                    </div>
+                    <div className="h-full p-2 w-full rounded-lg border border-white/10 bg-black/40"><XTerminal socket={socket} /></div>
                   </div>
                 </div>
               </div>
@@ -420,31 +263,15 @@ const Home = () => {
 
           {sidebarOpenMobile && (
             <div className="md:hidden fixed inset-0 z-50">
-              <div
-                className="absolute inset-0 bg-black/60"
-                onClick={() => setSidebarOpenMobile(false)}
-              />
+              <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpenMobile(false)} />
               <div className="absolute left-0 top-0 h-full w-[85vw] max-w-sm border-r border-white/10 bg-neutral-950/70 backdrop-blur-xl text-white">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                  <div className="text-sm text-white/80">Workspace</div>
-                  <button
-                    className="text-xs px-2 py-1 rounded-md border border-white/10 bg-white/5"
-                    onClick={() => setSidebarOpenMobile(false)}
-                  >
-                    Done
-                  </button>
+                  <span className="text-sm text-white/80">Workspace</span>
+                  <button className="text-xs px-2 py-1 rounded-md border border-white/10 bg-white/5" onClick={() => setSidebarOpenMobile(false)}>Done</button>
                 </div>
-                <div className="px-2">
-                  <EditorOptions onAddFile={() => setShowNewFileModal(true)} />
-                </div>
+                <EditorOptions editorRef={editorRef} onAddFile={() => setShowNewFileModal(true)} onToggleSettings={() => setShowSettings(true)} onToggleShortcuts={() => setShowShortcuts(true)} />
                 <div className="h-[calc(100%-104px)] overflow-auto pb-4 [scrollbar-width:thin]">
-                  <FileStructure
-                    removeFile={handleRemovFile}
-                    selected={selectedFileIndex}
-                    onClick={handleClick}
-                    files={files}
-                    addFolder={handleAddFolder}
-                  />
+                  <FileStructure removeFile={handleRemoveFile} selected={selectedFileIndex} onClick={handleFileClick} files={files} addFolder={handleAddFolder} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
                 </div>
               </div>
             </div>
@@ -452,69 +279,9 @@ const Home = () => {
         </div>
       </div>
 
-      {showNewFileModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
-            <div className="p-6 border-b border-white/5">
-              <h2 className="text-xl font-semibold text-white">New File</h2>
-              <p className="text-gray-500 text-sm mt-1">Enter a file name with extension</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <input
-                type="text"
-                placeholder="main.py, index.js, app.ts"
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddFile()}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition"
-                autoFocus
-              />
-            </div>
-            <div className="p-6 border-t border-white/5 flex gap-3">
-              <button
-                onClick={() => {
-                  setShowNewFileModal(false);
-                  setNewFileName("");
-                }}
-                className="flex-1 px-4 py-3 rounded-xl border border-white/20 text-white hover:bg-white/5 transition font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddFile}
-                disabled={!newFileName.trim() || isCreatingFile}
-                className="flex-1 px-4 py-3 rounded-xl bg-white text-black font-medium hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default Home;
-
-function EditorOptions({ onAddFile }: { onAddFile: () => void }) {
-  return (
-    <div className="flex gap-2 w-full justify-center py-4">
-      {EDITOR_ICONS.map((icon) => (
-        <button key={icon.icon_name} className="p-2 hover:bg-white/10 rounded" title={icon.icon_name}>
-          <Image src={icon.href} alt={icon.icon_name} width={25} height={25} />
-        </button>
-      ))}
-      <button
-        onClick={onAddFile}
-        className="p-2 hover:bg-white/10 rounded"
-        title="Add file"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width={25} height={25} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 5v14"/>
-          <path d="M5 12h14"/>
-        </svg>
-      </button>
+      <NewFileModal isOpen={showNewFileModal} fileName={newFileName} isCreating={isCreatingFile} onFileNameChange={setNewFileName} onCreate={handleAddFile} onClose={() => { setShowNewFileModal(false); setNewFileName(""); }} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} settings={settings} onSettingsChange={setSettings} />
+      <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </div>
   );
 }
