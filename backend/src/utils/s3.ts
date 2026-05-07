@@ -89,3 +89,14 @@ export async function restoreProject(projectId: string, baseFolder: string) {
     await new Promise((res) => writeStream.on("finish", res));
   }
 }
+
+export async function checkProjectHasFiles(projectId: string): Promise<boolean> {
+  const result = await s3.send(
+    new ListObjectsV2Command({
+      Bucket: bucket,
+      Prefix: `projects/${projectId}/`,
+      MaxKeys: 1,
+    }),
+  );
+  return (result.Contents?.length ?? 0) > 0;
+}

@@ -2,9 +2,24 @@ import WebSocket from "ws";
 import * as pty from "node-pty";
 import path from "path";
 import fs from "fs";
-import { Language } from "./types";
+import { Language, LANGUAGE_MAP } from "./types";
 import crypto from "crypto";
 import { deleteFile, restoreProject, uploadFile } from "./utils/s3.js";
+
+const TEMPLATE_MAP: Record<string, string> = {
+  "C++": "cpp",
+  "cpp": "cpp",
+  Java: "java",
+  java: "java",
+  JavaScript: "javascript",
+  javascript: "javascript",
+  Python: "python",
+  python: "python",
+  TypeScript: "typescript",
+  typescript: "typescript",
+  Markdown: "markdown",
+  markdown: "markdown",
+};
 
 class Reple {
   user: WebSocket;
@@ -14,18 +29,16 @@ class Reple {
   language: Language;
   files: any = null;
   projectId: string;
+  projectLanguage: string;
+  initialized: boolean = false;
 
-  constructor(user: WebSocket, language: Language, projectId?: string) {
+  constructor(user: WebSocket, language: Language, projectId?: string, projectLanguage?: string) {
     this.user = user;
     this.language = language;
     this.projectId = projectId ?? crypto.randomUUID();
+    this.projectLanguage = projectLanguage ?? "python";
 
-    const hostDir = path.join(
-      process.cwd(),
-      "codepilot_storage",
-      this.projectId,
-    );
-    this.hostDirectory = hostDir;
+    this.hostDirectory = path.join("/tmp/codepilot", this.projectId);
 
     this.user.on("message", async (msg) => {
       const parsed = JSON.parse(msg.toString());
@@ -35,11 +48,22 @@ class Reple {
           this.shell?.write(parsed.payload.data);
           break;
 
+        case "init":
+          if (this.initialized) {
+            console.log("Already initialized, skipping");
+            return;
+          }
+          const lang = parsed.payload.language as string;
+          const mappedLang = LANGUAGE_MAP[lang] ?? Language.PYTHON;
+          this.projectLanguage = lang;
+          this.language = mappedLang;
+          this.initialized = true;
+          await this.init();
+          break;
+
         case "files":
           console.log("Got files");
           await this.syncFilesToDisk(parsed.payload.files);
-          
-          
           break;
       }
     });
@@ -87,29 +111,30 @@ class Reple {
 
   init = async () => {
     await fs.promises.mkdir(this.hostDirectory, { recursive: true });
+    console.log(`Created temp folder: ${this.hostDirectory}`);
 
     await restoreProject(this.projectId, this.hostDirectory);
 
     const existing = fs.readdirSync(this.hostDirectory);
 
     if (existing.length == 0) {
-      const templatePath = path.join(process.cwd(), "templates", this.language);
-
+      const templateFolder = TEMPLATE_MAP[this.projectLanguage] || this.projectLanguage;
+      const templatePath = path.join(process.cwd(), "templates", templateFolder);
       fs.cpSync(templatePath, this.hostDirectory, { recursive: true });
     }
+
     const files = this.readProjectFiles(this.hostDirectory);
-      this.sendMessage(
-        JSON.stringify({
-          type: "files",
-          payload: { files },
-        }),
-      );
-    
+    this.sendMessage(
+      JSON.stringify({
+        type: "files",
+        payload: { files },
+      }),
+    );
+
     this.startContainer();
   };
 
   startContainer = () => {
-    
     this.shell = pty.spawn(
       "docker",
       [
@@ -146,65 +171,73 @@ class Reple {
       this.close();
     });
   };
-  private getHash = (content: string)=> {
+
+  private getHash = (content: string) => {
     return crypto.createHash("sha256").update(content).digest("hex");
-  }
-syncFilesToDisk = async (files: { name: string; content: string }[]) => {
-  console.log("Files syncing started");
+  };
 
-  const incomingFiles = new Set(files.map((file)=>file.name))
-  const existingFiles = this.readProjectFiles(this.hostDirectory).map((file)=>file.name);
+  syncFilesToDisk = async (files: { name: string; content: string }[]) => {
+    console.log("Files syncing started");
 
-  for (const existingFile of existingFiles){
-    if(!incomingFiles.has(existingFile)){
-      const filePath = path.join(this.hostDirectory,existingFile);
-      console.log("Deleting removed filed : ",existingFile);
-      await fs.promises.unlink(filePath);
-      await deleteFile(this.projectId,existingFile);
-    }
-  }
+    const incomingFiles = new Set(files.map((file) => file.name));
+    const existingFiles = this.readProjectFiles(this.hostDirectory).map((file) => file.name);
 
-  for (const file of files) {
-    const filePath = path.join(this.hostDirectory, file.name);
-
-    await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-
-    let shouldUpload = true;
-
-    try {
-      const existingContent = await fs.promises.readFile(filePath, "utf-8");
-
-      const existingHash = this.getHash(existingContent);
-      const newHash = this.getHash(file.content);
-
-      if (existingHash === newHash) {
-        shouldUpload = false; 
+    for (const existingFile of existingFiles) {
+      if (!incomingFiles.has(existingFile)) {
+        const filePath = path.join(this.hostDirectory, existingFile);
+        console.log("Deleting removed file:", existingFile);
+        await fs.promises.unlink(filePath);
+        await deleteFile(this.projectId, existingFile);
       }
-    } catch {
-      shouldUpload = true;
     }
 
-    if (shouldUpload) {
-      console.log("Uploading changed file:", file.name);
+    for (const file of files) {
+      const filePath = path.join(this.hostDirectory, file.name);
 
-      await fs.promises.writeFile(filePath, file.content);
-      await uploadFile(this.projectId, filePath, this.hostDirectory);
-    } else {
-      console.log("No changes detected:", file.name);
+      await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+
+      let shouldUpload = true;
+
+      try {
+        const existingContent = await fs.promises.readFile(filePath, "utf-8");
+
+        const existingHash = this.getHash(existingContent);
+        const newHash = this.getHash(file.content);
+
+        if (existingHash === newHash) {
+          shouldUpload = false;
+        }
+      } catch {
+        shouldUpload = true;
+      }
+
+      if (shouldUpload) {
+        console.log("Uploading changed file:", file.name);
+
+        await fs.promises.writeFile(filePath, file.content);
+        await uploadFile(this.projectId, filePath, this.hostDirectory);
+      } else {
+        console.log("No changes detected:", file.name);
+      }
     }
-  }
-};
+  };
 
-
-  close = () => {
+  close = async () => {
     if (this.shell) {
       this.shell.kill();
       this.shell = null;
       console.log("Shell closed");
     }
 
-    if (this.user.readyState == WebSocket.OPEN) {
+    if (this.user.readyState === WebSocket.OPEN) {
       this.user.close();
+    }
+
+    try {
+      await fs.promises.rm(this.hostDirectory, { recursive: true, force: true });
+      console.log(`Deleted temp folder: ${this.hostDirectory}`);
+    } catch (err) {
+      console.error("Error cleaning temp folder:", err);
     }
   };
 }
