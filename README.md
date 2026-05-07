@@ -1,68 +1,50 @@
 # CodePilot
 
-A modern online IDE for real-time collaborative code editing with project management and a built-in terminal.
+A modern online IDE with real-time code editing, integrated terminal, and project management.
 
 ## Features
 
-- **Monaco Editor** - Full-featured code editor (same as VS Code)
-- **Integrated Terminal** - xterm.js powered terminal with node-pty
-- **Real-time Collaboration** - Work together via room codes
-- **Project Management** - Create, edit, clone, delete, and export projects
-- **Grid & List Views** - Switch between dashboard display modes
-- **Sort & Filter** - Organize projects by name, date, or status
-- **Multi-language Support** - JavaScript, TypeScript, Python, Java, C++, Markdown
-- **S3 File Storage** - Project files stored securely in AWS S3
-- **Dark Theme** - Modern, sleek dark interface
+- **Monaco Editor** - Full-featured code editing with syntax highlighting, IntelliSense, and debugging support
+- **Integrated Terminal** - xterm.js powered terminal with Docker-based language execution
+- **Project Management** - Create, edit, clone, delete, and export projects as ZIP
+- **Multi-language Support** - Python, JavaScript, TypeScript, Java, C++, Markdown
+- **Dark Theme** - Sleek dark interface designed for focused coding
 
 ## Tech Stack
 
-- **Frontend**: Next.js 16, React 19, Monaco Editor, xterm.js, TailwindCSS 4
+- **Frontend**: Next.js 16, React 19, Monaco Editor, xterm.js, Tailwind CSS 4
 - **Backend**: Node.js, Express, WebSocket (ws), Prisma, node-pty
-- **Database**: PostgreSQL (via Prisma)
-- **Storage**: AWS S3 (Cloudflare R2 compatible)
+- **Database**: PostgreSQL
+- **Storage**: AWS S3 / Cloudflare R2
 
-## Getting Started
+## Setup
 
 ### Prerequisites
 
 - Node.js 18+
 - PostgreSQL
+- Docker
 - AWS S3 or Cloudflare R2 account
-- npm or yarn
 
 ### Installation
 
 ```bash
-# Install frontend dependencies
+# Install dependencies
 cd frontend && npm install
-
-# Install backend dependencies
 cd backend && npm install
+
+# Configure environment variables (see below)
 ```
-
-### Running the Development Servers
-
-```bash
-# Terminal 1 - Start backend
-cd backend && npm run dev
-
-# Terminal 2 - Start frontend
-cd frontend && npm run dev
-```
-
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8080
 
 ### Environment Variables
 
-**Frontend** (`.env`):
+**Frontend** (`frontend/.env`):
 ```env
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8080
 NEXT_PUBLIC_WS_URL=ws://localhost:8080
 ```
 
-**Backend** (`.env`):
+**Backend** (`backend/.env`):
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/codepilot
 PORT=8080
@@ -72,86 +54,75 @@ accessKeyId=your-access-key
 secretAccessKey=your-secret-key
 ```
 
+### Running
+
+```bash
+# Terminal 1 - Backend
+cd backend && npm run dev
+
+# Terminal 2 - Frontend
+cd frontend && npm run dev
+```
+
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8080
+
 ## Project Structure
 
 ```
 CODE-PILOT/
-├── frontend/                    # Next.js frontend application
+├── frontend/                 # Next.js frontend
 │   ├── app/
-│   │   ├── editor/             # Monaco editor page
-│   │   ├── join/               # Login/signup page
-│   │   └── dashboard/          # Project dashboard
-│   ├── components/             # React components
-│   │   └── FileStructure.tsx   # File tree sidebar
-│   └── hooks/
-│       └── websocket.ts        # WebSocket hook
+│   │   ├── editor/[id]/    # Monaco editor page
+│   │   ├── join/           # Authentication page
+│   │   └── dashboard/      # Project dashboard
+│   ├── components/         # React components
+│   ├── hooks/              # Custom React hooks
+│   ├── constants/          # App constants
+│   └── utils/              # Utility functions
 │
-└── backend/                     # Node.js backend server
+└── backend/                 # Node.js backend
     ├── src/
-    │   ├── app.ts              # Express app
-    │   ├── server.ts           # Server entry point
-    │   ├── RepleManager.ts     # REPL process manager
-    │   ├── routes/            # API routes
-    │   └── lib/               # Utilities (Prisma)
+    │   ├── server.ts       # WebSocket server
+    │   ├── RepleManager.ts # Terminal process manager
+    │   ├── routes/         # API routes
+    │   └── lib/            # Utilities
     ├── prisma/
-    │   └── schema.prisma       # Database schema
-    └── templates/             # Language templates
-        ├── typescript/
-        ├── javascript/
-        ├── python/
-        ├── java/
-        ├── cpp/
-        └── markdown/
+    │   └── schema.prisma   # Database schema
+    └── templates/          # Language templates
 ```
 
-## API Endpoints
+## Supported Languages
 
-### Projects
-- `GET /api/projects` - List all projects
-- `POST /api/projects` - Create new project
-- `GET /api/projects/:id` - Get project details
-- `PUT /api/projects/:id` - Update project
-- `DELETE /api/projects/:id` - Delete project
-- `POST /api/projects/:id/clone` - Clone project
-- `GET /api/projects/:id/export` - Export as ZIP
+| Language | Command |
+|----------|---------|
+| Python | `python3` |
+| JavaScript | `node` |
+| TypeScript | `ts-node` |
+| Java | `javac && java` |
+| C++ | `g++ && ./a.out` |
+| Markdown | `cat` |
 
-### Users
-- `POST /api/users/signup` - Create account
-- `POST /api/users/login` - Sign in
+## Keyboard Shortcuts
 
-### Rooms
-- `POST /api/rooms` - Create room
-- `GET /api/rooms/:id` - Get room details
-
-## WebSocket Messages
-
-**Client → Server**:
-```json
-{ "type": "files", "files": [...] }
-{ "type": "terminal", "data": "command" }
-{ "type": "join", "roomId": "room-code" }
-```
-
-**Server → Client**:
-```json
-{ "type": "files", "files": [...] }
-{ "type": "terminal", "data": "output" }
-{ "type": "run", "output": "..." }
-```
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+S` | Save file |
+| `Ctrl+Enter` | Run code |
+| `Ctrl+F` | Find |
+| `Ctrl+H` | Find & Replace |
+| `Ctrl+Shift+L` | Toggle minimap |
+| `Ctrl+K Ctrl+M` | Show shortcuts |
 
 ## Development
 
 ```bash
-# Build frontend
+# Build frontend for production
 cd frontend && npm run build
 
 # Type check backend
 cd backend && npx tsc --noEmit
 
-# Run migrations
+# Run database migrations
 cd backend && npx prisma migrate dev
 ```
-
-## License
-
-MIT
