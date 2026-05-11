@@ -80,15 +80,33 @@ export default function SignupUI() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden py-12 px-4">
+    <div className="min-h-[100svh] min-h-screen bg-black flex items-start sm:items-center justify-center relative overflow-hidden py-8 sm:py-12 px-4">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f0f] via-black to-black" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-[150px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-white/3 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[200px] pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-[320px] h-[320px] sm:w-[520px] sm:h-[520px] lg:w-[600px] lg:h-[600px] bg-white/4 sm:bg-white/5 rounded-full blur-[90px] sm:blur-[150px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[280px] h-[280px] sm:w-[440px] sm:h-[440px] lg:w-[500px] lg:h-[500px] bg-white/3 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[460px] h-[460px] sm:w-[700px] sm:h-[700px] lg:w-[800px] lg:h-[800px] bg-blue-500/4 sm:bg-blue-500/5 rounded-full blur-[120px] sm:blur-[200px] pointer-events-none" />
       </div>
       
-      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-16 pt-8 lg:pt-0">
+      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center lg:items-start gap-6 sm:gap-10 lg:gap-16 pt-6 sm:pt-8 lg:pt-0">
+        {/* Mobile brand header */}
+        <div className="w-full lg:hidden flex flex-col items-center text-center">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center shadow-lg shadow-white/10">
+              <span className="text-black font-bold text-xl">C</span>
+            </div>
+            <div className="text-left">
+              <div className="text-white font-bold text-xl leading-tight">Code Pilot</div>
+              <div className="text-gray-500 text-sm">Online IDE</div>
+            </div>
+          </div>
+          <div className="text-gray-400 text-sm max-w-sm">
+            {formType === FormType.SIGNUP
+              ? "Create your account to start building."
+              : "Sign in to pick up where you left off."}
+          </div>
+        </div>
+
         {/* Left side - Branding (hidden on mobile) */}
         <div className="hidden lg:flex w-full lg:w-1/2 text-center lg:text-left lg:pt-8">
           <div className="flex flex-col items-center lg:items-start">
@@ -112,12 +130,12 @@ export default function SignupUI() {
             </p>
           </div>
         </div>
-
+        
         {/* Right side - Form Card */}
-        <div className="w-full sm:max-w-md">
-          <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl shadow-black/50">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-white mb-2">
+        <div className="w-full max-w-md">
+          <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/50">
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
                 {formType === FormType.SIGNUP ? "Create account" : "Welcome back"}
               </h2>
               <p className="text-gray-500 text-sm">
@@ -139,7 +157,7 @@ export default function SignupUI() {
                 <input
                   type="email"
                   placeholder="you@example.com"
-                  className={`w-full bg-white/5 border ${errors.email ? 'border-red-500/50' : 'border-white/10'} px-4 py-3.5 rounded-xl text-base text-white placeholder-gray-600 focus:outline-none focus:border-white/30 focus:bg-white/10 transition`}
+                  className={`w-full bg-white/5 border ${errors.email ? "border-red-500/50" : "border-white/10"} px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base text-white placeholder-gray-600 focus:outline-none focus:border-white/30 focus:bg-white/10 transition`}
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors(prev => ({ ...prev, email: undefined })); }}
                   onBlur={() => {
@@ -155,7 +173,7 @@ export default function SignupUI() {
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className={`w-full bg-white/5 border ${errors.password ? 'border-red-500/50' : 'border-white/10'} px-4 py-3.5 rounded-xl text-base text-white placeholder-gray-600 focus:outline-none focus:border-white/30 focus:bg-white/10 transition`}
+                  className={`w-full bg-white/5 border ${errors.password ? "border-red-500/50" : "border-white/10"} px-4 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base text-white placeholder-gray-600 focus:outline-none focus:border-white/30 focus:bg-white/10 transition`}
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setErrors(prev => ({ ...prev, password: undefined })); }}
                   onBlur={() => {
@@ -183,7 +201,7 @@ export default function SignupUI() {
             <button 
               onClick={handleSubmit} 
               disabled={loading}
-              className="w-full mt-6 bg-white text-black py-3.5 rounded-xl font-semibold hover:bg-gray-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full mt-6 bg-white text-black py-3 sm:py-3.5 rounded-xl font-semibold hover:bg-gray-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
@@ -192,7 +210,7 @@ export default function SignupUI() {
               )}
             </button>
 
-            <div className="relative my-6">
+            <div className="relative my-5 sm:my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10" />
               </div>
@@ -201,7 +219,7 @@ export default function SignupUI() {
               </div>
             </div>
 
-            <button className="w-full py-3 rounded-xl border border-white/20 text-white hover:bg-white/5 transition flex items-center justify-center gap-3">
+            <button className="w-full py-3 sm:py-3.5 rounded-xl border border-white/20 text-white hover:bg-white/5 transition flex items-center justify-center gap-3 text-sm sm:text-base">
               <svg viewBox="0 0 24 24" className="w-5 h-5">
                 <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
               </svg>

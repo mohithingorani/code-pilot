@@ -60,6 +60,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState<"lastEditedAt" | "name" | "createdAt">("lastEditedAt");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { settings: dashboardSettings, updateSettings } = useDashboardSettings();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -188,87 +189,98 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen text-white selection:bg-white/20">
+    <div className="min-h-[100svh] min-h-screen text-white selection:bg-white/20 overflow-x-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f0f] via-black to-black" />
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/5 rounded-full blur-[150px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-white/3 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-[320px] h-[320px] sm:w-[520px] sm:h-[520px] lg:w-[600px] lg:h-[600px] bg-white/4 sm:bg-white/5 rounded-full blur-[90px] sm:blur-[150px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-[280px] h-[280px] sm:w-[440px] sm:h-[440px] lg:w-[500px] lg:h-[500px] bg-white/3 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
       </div>
 
-      <div className="relative z-10 min-h-screen flex">
-        {/* Left Sidebar */}
-        <div className="w-64 bg-black/30 backdrop-blur-xl border-r border-white/5 flex flex-col">
-          <div className="p-5 border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-black font-bold text-lg">C</span>
-              </div>
-              <div>
-                <span className="text-white font-semibold block leading-tight">Code Pilot</span>
-                <span className="text-gray-500 text-xs">Online IDE</span>
-              </div>
+      <div className="relative z-10 min-h-[100svh] min-h-screen flex">
+        {/* Mobile Sidebar Drawer */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
+            />
+            <div className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-black/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
+              <Sidebar
+                onOpenSettings={() => {
+                  setShowSettings(true);
+                  setSidebarOpen(false);
+                }}
+              />
             </div>
           </div>
+        )}
 
-          <div className="p-4 space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/10 text-white font-medium">
-              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 12h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
-                <path d="M14 12h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
-                <path d="M2 4v4a2 2 0 0 0 2 2h6" />
-                <path d="M14 4v4a2 2 0 0 0 2 2h6" />
-              </svg>
-              Projects
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx={12} cy={12} r={10} />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-              </svg>
-              Explore
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx={9} cy={7} r={4} />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-              Team
-            </button>
-          </div>
-
-          <div className="flex-1" />
-
-          <div className="p-4 border-t border-white/5 space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx={12} cy={7} r={4} />
-              </svg>
-              Account
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <rect width={18} height={18} x={3} y={3} rx={2} ry={2} />
-                <circle cx={9} cy={9} r={1} />
-                <circle cx={15} cy={9} r={1} />
-                <circle cx={9} cy={15} r={1} />
-                <circle cx={15} cy={15} r={1} />
-              </svg>
-              Preferences
-            </button>
-          </div>
+        {/* Left Sidebar (Desktop) */}
+        <div className="hidden lg:flex w-64 bg-black/30 backdrop-blur-xl border-r border-white/5 flex-col">
+          <Sidebar onOpenSettings={() => setShowSettings(true)} />
         </div>
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          <div className="h-16 bg-black/20 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6">
-            <div className="flex items-center gap-4 flex-1 max-w-md">
+          {/* Top Bar */}
+          <div className="bg-black/20 backdrop-blur-xl border-b border-white/5 px-4 sm:px-6 py-3">
+            <div className="sm:hidden flex items-center justify-between gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
+                aria-label="Open sidebar"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
+                  <line x1={4} y1={6} x2={20} y2={6} />
+                  <line x1={4} y1={12} x2={20} y2={12} />
+                  <line x1={4} y1={18} x2={20} y2={18} />
+                </svg>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
+                  title={viewMode === "grid" ? "List view" : "Grid view"}
+                >
+                  {viewMode === "grid" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                      <line x1={8} y1={6} x2={21} y2={6} />
+                      <line x1={8} y1={12} x2={21} y2={12} />
+                      <line x1={8} y1={18} x2={21} y2={18} />
+                      <line x1={3} y1={6} x2={3.01} y2={6} />
+                      <line x1={3} y1={12} x2={3.01} y2={12} />
+                      <line x1={3} y1={18} x2={3.01} y2={18} />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                      <rect x={3} y={3} width={7} height={7} />
+                      <rect x={14} y={3} width={7} height={7} />
+                      <rect x={14} y={14} width={7} height={7} />
+                      <rect x={3} y={14} width={7} height={7} />
+                    </svg>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition group"
+                  aria-label="Open preferences"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-white">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx={12} cy={12} r={3} />
+                  </svg>
+                </button>
+
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
+                  <span className="text-black font-semibold">M</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 sm:hidden flex items-center gap-3">
               <div className="relative flex-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                   <circle cx={11} cy={11} r={8} />
@@ -282,68 +294,97 @@ export default function Dashboard() {
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 transition text-sm"
                 />
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none"
               >
-                <option value="lastEditedAt">Last Edited</option>
+                <option value="lastEditedAt">Edited</option>
                 <option value="name">Name</option>
                 <option value="createdAt">Created</option>
               </select>
+            </div>
 
-              <button
-                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
-                title={viewMode === "grid" ? "List view" : "Grid view"}
-              >
-                {viewMode === "grid" ? (
-                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                    <line x1={8} y1={6} x2={21} y2={6} />
-                    <line x1={8} y1={12} x2={21} y2={12} />
-                    <line x1={8} y1={18} x2={21} y2={18} />
-                    <line x1={3} y1={6} x2={3.01} y2={6} />
-                    <line x1={3} y1={12} x2={3.01} y2={12} />
-                    <line x1={3} y1={18} x2={3.01} y2={18} />
+            <div className="hidden sm:flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 flex-1 max-w-md">
+                <div className="relative flex-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                    <circle cx={11} cy={11} r={8} />
+                    <path d="m21 21-4.3-4.3" />
                   </svg>
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                    <rect x={3} y={3} width={7} height={7} />
-                    <rect x={14} y={3} width={7} height={7} />
-                    <rect x={14} y={14} width={7} height={7} />
-                    <rect x={3} y={14} width={7} height={7} />
-                  </svg>
-                )}
-              </button>
+                  <input
+                    type="text"
+                    placeholder="Search projects..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 transition text-sm"
+                  />
+                </div>
+              </div>
 
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition group"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-white">
-                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                  <circle cx={12} cy={12} r={3} />
-                </svg>
-              </button>
-              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-                <span className="text-black font-semibold">M</span>
+              <div className="flex items-center gap-3">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
+                >
+                  <option value="lastEditedAt">Last Edited</option>
+                  <option value="name">Name</option>
+                  <option value="createdAt">Created</option>
+                </select>
+
+                <button
+                  onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
+                  title={viewMode === "grid" ? "List view" : "Grid view"}
+                >
+                  {viewMode === "grid" ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                      <line x1={8} y1={6} x2={21} y2={6} />
+                      <line x1={8} y1={12} x2={21} y2={12} />
+                      <line x1={8} y1={18} x2={21} y2={18} />
+                      <line x1={3} y1={6} x2={3.01} y2={6} />
+                      <line x1={3} y1={12} x2={3.01} y2={12} />
+                      <line x1={3} y1={18} x2={3.01} y2={18} />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                      <rect x={3} y={3} width={7} height={7} />
+                      <rect x={14} y={3} width={7} height={7} />
+                      <rect x={14} y={14} width={7} height={7} />
+                      <rect x={3} y={14} width={7} height={7} />
+                    </svg>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition group"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-white">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx={12} cy={12} r={3} />
+                  </svg>
+                </button>
+
+                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
+                  <span className="text-black font-semibold">M</span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex justify-between items-start mb-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 sm:mb-8">
               <div>
-                <h1 className="text-3xl font-semibold text-white mb-1">Your Projects</h1>
+                <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-1">Your Projects</h1>
                 <p className="text-gray-500 text-sm">{projects.length} projects</p>
               </div>
               <button
                 onClick={() => setShowNewProject(true)}
-                className="bg-white hover:bg-gray-100 text-black px-5 py-2.5 rounded-xl font-medium transition flex items-center gap-2 shadow-lg"
+                className="bg-white hover:bg-gray-100 text-black px-5 py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14" />
@@ -354,10 +395,10 @@ export default function Dashboard() {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
                 onClick={() => setFilterStatus("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
                   filterStatus === "all" ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -365,7 +406,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={() => setFilterStatus("active")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
                   filterStatus === "active" ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -373,7 +414,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={() => setFilterStatus("idle")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
                   filterStatus === "idle" ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -655,6 +696,132 @@ function ProjectCard({
   );
 }
 
+function Sidebar({
+  onOpenSettings,
+}: {
+  onOpenSettings: () => void;
+}) {
+  return (
+    <>
+      <div className="p-5 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+            <span className="text-black font-bold text-lg">C</span>
+          </div>
+          <div>
+            <span className="text-white font-semibold block leading-tight">Code Pilot</span>
+            <span className="text-gray-500 text-xs">Online IDE</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-1">
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/10 text-white font-medium">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M2 12h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
+            <path d="M14 12h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
+            <path d="M2 4v4a2 2 0 0 0 2 2h6" />
+            <path d="M14 4v4a2 2 0 0 0 2 2h6" />
+          </svg>
+          Projects
+        </button>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx={12} cy={12} r={10} />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          Explore
+        </button>
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx={9} cy={7} r={4} />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Team
+        </button>
+      </div>
+
+      <div className="flex-1" />
+
+      <div className="p-4 border-t border-white/5 space-y-1">
+        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+            <circle cx={12} cy={7} r={4} />
+          </svg>
+          Account
+        </button>
+        <button
+          onClick={onOpenSettings}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect width={18} height={18} x={3} y={3} rx={2} ry={2} />
+            <circle cx={9} cy={9} r={1} />
+            <circle cx={15} cy={9} r={1} />
+            <circle cx={9} cy={15} r={1} />
+            <circle cx={15} cy={15} r={1} />
+          </svg>
+          Preferences
+        </button>
+      </div>
+    </>
+  );
+}
+
 function ProjectListItem({
   project,
   onOpenMenu,
@@ -691,7 +858,7 @@ function ProjectListItem({
   return (
     <div
       onClick={onOpen}
-      className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 hover:border-white/20 transition cursor-pointer group flex items-center gap-4 relative"
+      className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 hover:border-white/20 transition cursor-pointer group flex items-center gap-3 sm:gap-4 relative"
     >
       <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
         <span className="text-lg font-bold text-white">{project.name.charAt(0).toUpperCase()}</span>
@@ -700,9 +867,15 @@ function ProjectListItem({
         <span className="text-white font-medium truncate">{project.name}</span>
         <p className="text-gray-500 text-sm truncate">{project.description || "No description"}</p>
       </div>
-      <span className="text-gray-600 text-sm shrink-0">{project.language}</span>
-      <span className="text-gray-600 text-sm shrink-0">{formatRelativeTime(project.lastEditedAt)}</span>
-      <span className={`px-2 py-1 rounded-full text-xs ${project.status === "active" ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-gray-500"}`}>
+      <span className="hidden sm:inline text-gray-600 text-sm shrink-0">{project.language}</span>
+      <span className="hidden md:inline text-gray-600 text-sm shrink-0">{formatRelativeTime(project.lastEditedAt)}</span>
+      <span
+        className={`hidden sm:inline-flex px-2 py-1 rounded-full text-xs shrink-0 ${
+          project.status === "active"
+            ? "bg-emerald-500/20 text-emerald-400"
+            : "bg-white/5 text-gray-500"
+        }`}
+      >
         {project.status}
       </span>
       <button
