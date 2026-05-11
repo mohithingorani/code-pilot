@@ -117,11 +117,20 @@ class Reple {
       await fs.promises.mkdir(this.hostDirectory, { recursive: true });
       console.log(`Created temp folder: ${this.hostDirectory}`);
 
-      await restoreProject(this.projectId, this.hostDirectory);
-
       const existing = fs.readdirSync(this.hostDirectory);
 
       if (existing.length == 0) {
+        console.log("No existing files, attempting restore from S3...");
+        try {
+          await restoreProject(this.projectId, this.hostDirectory);
+        } catch (err) {
+          console.log("S3 restore failed or no files in S3, using template");
+        }
+      }
+
+      const afterRestore = fs.readdirSync(this.hostDirectory);
+
+      if (afterRestore.length == 0) {
         const templateFolder = TEMPLATE_MAP[this.projectLanguage] || this.projectLanguage;
         const templatePath = path.join(process.cwd(), "templates", templateFolder);
         fs.cpSync(templatePath, this.hostDirectory, { recursive: true });
@@ -147,7 +156,7 @@ class Reple {
       "docker",
       [
         "run",
-        "-it",
+        "-t",
         "--rm",
         "-v",
         `${this.hostDirectory}:/workspace`,
@@ -176,7 +185,6 @@ class Reple {
 
     this.shell.onExit(({ exitCode }) => {
       console.log("Container exited with code", exitCode);
-      this.close();
     });
   };
 
@@ -204,28 +212,24 @@ class Reple {
 
       await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
 
-      let shouldUpload = true;
+      let shouldWrite = true;
 
       try {
         const existingContent = await fs.promises.readFile(filePath, "utf-8");
 
-        const existingHash = this.getHash(existingContent);
-        const newHash = this.getHash(file.content);
-
-        if (existingHash === newHash) {
-          shouldUpload = false;
+        if (existingContent === file.content) {
+          shouldWrite = false;
         }
       } catch {
-        shouldUpload = true;
+        shouldWrite = true;
       }
 
-      if (shouldUpload) {
-        console.log("Uploading changed file:", file.name);
-
-        await fs.promises.writeFile(filePath, file.content);
+      if (shouldWrite) {
+        console.log("Writing file:", file.name);
+        await fs.promises.writeFile(filePath, file.content, "utf-8");
         await uploadFile(this.projectId, filePath, this.hostDirectory);
       } else {
-        console.log("No changes detected:", file.name);
+        console.log("No changes:", file.name);
       }
     }
   };
@@ -239,15 +243,6 @@ class Reple {
 
     if (this.user.readyState === WebSocket.OPEN) {
       this.user.close();
-    }
-
-    try {
-      if (fs.existsSync(this.hostDirectory)) {
-        await fs.promises.rm(this.hostDirectory, { recursive: true, force: true });
-        console.log(`Deleted temp folder: ${this.hostDirectory}`);
-      }
-    } catch (err) {
-      console.error("Error cleaning temp folder:", err);
     }
   };
 }

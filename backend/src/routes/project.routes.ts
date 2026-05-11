@@ -1,9 +1,10 @@
-import Router from "express";
+import Router, { Request, Response } from "express";
 const router = Router();
 import { prisma } from "../lib/prisma.js";
 import archiver from "archiver";
 import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
+import { authMiddleware, AuthRequest } from "../middleware/auth.js";
 
 // Configure S3 client
 const s3Client = new S3Client({
@@ -18,14 +19,10 @@ const s3Client = new S3Client({
 const bucket = "codepilot-bucket";
 
 // Get all projects
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const user = await prisma.user.findFirst({
-      where: { email: "demo@codepilot.com" },
-    });
-
-    if (!user) {
-      return res.json([]);
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { sort = "updatedAt" } = req.query;
@@ -46,7 +43,7 @@ router.get("/", async (req, res) => {
     }
 
     const projects = await prisma.project.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: req.user.id },
       orderBy,
     });
 
@@ -58,17 +55,13 @@ router.get("/", async (req, res) => {
 });
 
 // Create new project
-router.post("/", async (req, res) => {
+router.post("/", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, language } = req.body;
-
-    const user = await prisma.user.findFirst({
-      where: { email: "demo@codepilot.com" },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
+    const { name, description, language } = req.body;
 
     const project = await prisma.project.create({
       data: {
@@ -76,7 +69,7 @@ router.post("/", async (req, res) => {
         description: description || "",
         language,
         status: "active",
-        ownerId: user.id,
+        ownerId: req.user.id,
       },
     });
 
@@ -88,9 +81,13 @@ router.post("/", async (req, res) => {
 });
 
 // Get single project
-router.get("/:id", async (req, res) => {
+router.get("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const id = req.params.id as string;
     const project = await prisma.project.findUnique({
       where: { id },
       include: { files: true },
@@ -98,6 +95,10 @@ router.get("/:id", async (req, res) => {
 
     if (!project) {
       return res.status(404).json({ error: "Project not found" });
+    }
+
+    if (project.ownerId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
     res.json(project);
@@ -108,10 +109,22 @@ router.get("/:id", async (req, res) => {
 });
 
 // Update project
-router.put("/:id", async (req, res) => {
+router.put("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const id = req.params.id as string;
     const { name, description, language } = req.body;
+
+    const existingProject = await prisma.project.findUnique({ where: { id } });
+    if (!existingProject) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+    if (existingProject.ownerId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
@@ -132,9 +145,13 @@ router.put("/:id", async (req, res) => {
 });
 
 // Clone project
-router.post("/:id/clone", async (req, res) => {
+router.post("/:id/clone", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const id = req.params.id as string;
 
     const originalProject = await prisma.project.findUnique({
       where: { id },
@@ -144,13 +161,17 @@ router.post("/:id/clone", async (req, res) => {
       return res.status(404).json({ error: "Project not found" });
     }
 
+    if (originalProject.ownerId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const newProject = await prisma.project.create({
       data: {
         name: `${originalProject.name} (Copy)`,
         description: originalProject.description,
         language: originalProject.language,
         status: "active",
-        ownerId: originalProject.ownerId,
+        ownerId: req.user.id,
         fileCount: originalProject.fileCount,
       },
     });
@@ -163,9 +184,13 @@ router.post("/:id/clone", async (req, res) => {
 });
 
 // Export project as ZIP
-router.get("/:id/export", async (req, res) => {
+router.get("/:id/export", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const id = req.params.id as string;
 
     const project = await prisma.project.findUnique({
       where: { id },
@@ -173,6 +198,10 @@ router.get("/:id/export", async (req, res) => {
 
     if (!project) {
       return res.status(404).json({ error: "Project not found" });
+    }
+
+    if (project.ownerId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
     }
 
     const prefix = `projects/${id}/`;
@@ -226,9 +255,22 @@ router.get("/:id/export", async (req, res) => {
 });
 
 // Delete project
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const id = req.params.id as string;
+
+    const project = await prisma.project.findUnique({ where: { id } });
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+    if (project.ownerId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     await prisma.project.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {

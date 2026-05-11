@@ -59,7 +59,10 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (projectId) {
-      axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${projectId}`)
+      const token = localStorage.getItem("token");
+      axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
         .then(res => setProject(res.data))
         .catch(console.error);
     }

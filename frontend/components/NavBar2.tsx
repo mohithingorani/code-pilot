@@ -9,9 +9,9 @@ export default function NavBar() {
             </div> 
             <div className="flex items-center gap-8">
                 <div className="hidden md:flex gap-6 text-sm font-medium text-gray-400">
-                    <button className="hover:text-white transition-colors">Features</button> 
-                    <button className="hover:text-white transition-colors">Pricing</button> 
-                    <button className="hover:text-white transition-colors">Documentation</button> 
+                    <a href="/features" className="hover:text-white transition-colors">Features</a> 
+                    <a href="/dashboard" className="hover:text-white transition-colors">Dashboard</a> 
+                    <a href="/join" className="hover:text-white transition-colors">Sign In</a> 
                 </div>
                 <a href="/join">
                     <motion.button 

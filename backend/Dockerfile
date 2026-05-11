@@ -1,40 +1,35 @@
-FROM ubuntu:22.04
+FROM node:20-alpine AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    python3-dev \
-    ca-certificates \
-    gnupg \
-    curl \
-    && mkdir -p /etc/apt/keyrings \
-    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodejs.org/deb nodecurrent main" > /etc/apt/sources.list.d/nodesource.list \
-    && apt-get update && apt-get install -y \
-    nodejs \
-    npm \
-    openjdk-17-jdk \
-    openjdk-17-jre \
-    g++ \
-    gdb \
-    make \
-    git \
-    vim \
-    nano \
-    wget \
-    unzip \
-    zip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache python3 make g++ docker-cli
 
-RUN npm install -g typescript@4.5.5 ts-node@8 tsx
-RUN pip3 install black flake8 mypy
+COPY package*.json ./
+COPY prisma ./prisma/
 
-RUN ln -sf /usr/bin/python3 /usr/bin/python
+RUN npm ci
 
-WORKDIR /workspace
+COPY . .
 
-CMD ["/bin/bash"]
+RUN npx prisma generate
+RUN npm run build
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache docker-cli
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/templates ./templates
+
+EXPOSE 8080
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["npm", "start"]

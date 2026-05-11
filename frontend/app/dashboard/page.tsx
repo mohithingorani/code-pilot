@@ -82,9 +82,11 @@ export default function Dashboard() {
       setLoading(true);
       const params = new URLSearchParams();
       params.set("sort", sortBy);
+      const token = localStorage.getItem("token");
 
       const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects?${params.toString()}`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects?${params.toString()}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setProjects(res.data);
     } catch (error) {
@@ -97,11 +99,16 @@ export default function Dashboard() {
   const handleCreateProject = async () => {
     if (!newProjectName || !selectedLanguage) return;
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects`, {
-        name: newProjectName,
-        description: newProjectDesc,
-        language: selectedLanguage,
-      });
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects`,
+        {
+          name: newProjectName,
+          description: newProjectDesc,
+          language: selectedLanguage,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setProjects([res.data, ...projects]);
       setNewProjectName("");
       setNewProjectDesc("");
@@ -115,7 +122,11 @@ export default function Dashboard() {
   const handleDeleteProject = async (id: string) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
     try {
-      await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}`);
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setProjects(projects.filter((p) => p.id !== id));
       setOpenMenuId(null);
     } catch (error) {
@@ -126,9 +137,11 @@ export default function Dashboard() {
   const handleEditProject = async () => {
     if (!editingProject || !editName.trim()) return;
     try {
+      const token = localStorage.getItem("token");
       const res = await axios.put(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${editingProject.id}`,
-        { name: editName, description: editDesc }
+        { name: editName, description: editDesc },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setProjects(projects.map((p) => (p.id === res.data.id ? res.data : p)));
       setShowEditModal(false);
@@ -141,8 +154,11 @@ export default function Dashboard() {
 
   const handleCloneProject = async (id: string) => {
     try {
+      const token = localStorage.getItem("token");
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}/clone`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}/clone`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setProjects([res.data, ...projects]);
       setOpenMenuId(null);
@@ -153,9 +169,13 @@ export default function Dashboard() {
 
   const handleExport = async (id: string, name: string) => {
     try {
+      const token = localStorage.getItem("token");
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}/export`,
-        { responseType: "blob" }
+        { 
+          responseType: "blob",
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

@@ -63,6 +63,15 @@ export default function Home() {
 
         {/* Features Grid */}
         <section id="features" className="w-full py-24 border-t border-white/5">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-3xl font-bold text-white">Key Features</h2>
+            <a href="/features" className="text-sm text-gray-400 hover:text-white transition flex items-center gap-2">
+              View all
+              <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </a>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
@@ -106,7 +115,7 @@ export default function Home() {
       
       {/* Footer-like element */}
       <footer className="py-12 border-t border-white/5 text-center text-gray-500 text-sm">
-        &copy; 2026 Code Pilot Inc. All rights reserved.
+        © 2026 CodePilot. All rights reserved.
       </footer>
     </div>
   );
