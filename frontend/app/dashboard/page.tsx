@@ -191,12 +191,12 @@ export default function Dashboard() {
   return (
     <div className="min-h-[100svh] min-h-screen text-white selection:bg-white/20 overflow-x-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0f0f0f] via-black to-black" />
+        <div className="absolute inset-0 bg-linear-to-b from-[#0f0f0f] via-black to-black" />
         <div className="absolute -top-24 -right-24 w-[320px] h-[320px] sm:w-[520px] sm:h-[520px] lg:w-[600px] lg:h-[600px] bg-white/4 sm:bg-white/5 rounded-full blur-[90px] sm:blur-[150px] pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-[280px] h-[280px] sm:w-[440px] sm:h-[440px] lg:w-[500px] lg:h-[500px] bg-white/3 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-70 h-70 sm:w-110 sm:h-110 lg:w-125 lg:h-125 bg-white/3 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
       </div>
 
-      <div className="relative z-10 min-h-[100svh] min-h-screen flex">
+      <div className="relative z-10 min-h-screen flex">
         {/* Mobile Sidebar Drawer */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">

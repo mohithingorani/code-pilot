@@ -2,8 +2,11 @@
 
 import NavBar from "@/components/NavBar2";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
   return (
     <div className="relative min-h-screen text-white selection:bg-white/20">
       <NavBar />
@@ -12,14 +15,7 @@ export default function Home() {
         
         {/* Hero Section */}
         <section className="relative z-10 py-20 md:py-32 flex flex-col items-center text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-block px-4 py-1.5 mb-6 rounded-full border border-white/10 bg-white/5 text-sm font-medium text-gray-400 backdrop-blur-sm"
-          >
-            Powered by next-gen AI
-          </motion.div>
+     
 
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
@@ -27,7 +23,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-[0.95]"
           >
-            <span className="inline-block pb-2 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
+            <span className="inline-block pb-2 bg-linear-to-b from-white to-gray-500 bg-clip-text text-transparent">
               Code at the speed <br /> of thought.
             </span>
           </motion.h1>
@@ -48,15 +44,18 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 items-center"
           >
-            <a href="/join">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-              >
-                Start Coding Now
-              </motion.button>
-            </a>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => {
+                const token = localStorage.getItem("token");
+                router.push(token ? "/dashboard" : "/join");
+              }}
+              className="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            >
+              Start Coding Now
+            </motion.button>
             <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-xl font-medium text-lg hover:bg-white/10 transition-colors backdrop-blur-sm">
               Watch Demo
             </button>
