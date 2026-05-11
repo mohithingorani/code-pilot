@@ -29,16 +29,16 @@ export default function DotBackground() {
       <div className="absolute inset-0 bg-linear-to-b from-neutral-900 via-black to-black" />
 
       {/* dot grid */}
-      <div
+      {/* <div
         className="absolute inset-0 opacity-40 dot-mask"
         style={{
           backgroundImage:
             "radial-gradient(rgba(255,255,255,0.6) 1px, transparent 2px)",
           backgroundSize: "19px 19px",
         }}
-      />
+      /> */}
 
-      {/* noise texture */}
+      noise texture
       <div
         className="absolute inset-0 opacity-[0.05] mix-blend-overlay"
         style={{

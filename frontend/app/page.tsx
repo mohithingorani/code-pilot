@@ -25,16 +25,18 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-6xl md:text-8xl font-bold tracking-tight mb-8 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent"
+            className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-[0.95]"
           >
-            Code at the speed <br /> of thought.
+            <span className="inline-block pb-2 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
+              Code at the speed <br /> of thought.
+            </span>
           </motion.h1>
 
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-lg md:text-xl text-gray-400 mb-12 max-w-2xl leading-relaxed"
+            className="add md:text-xl text-gray-400 mb-12 max-w-2xl leading-relaxed"
           >
             Code Pilot is the world&apos;s most advanced real-time collaborative IDE
             with integrated AI that actually understands your intent.
@@ -104,9 +106,25 @@ export default function Home() {
 
       </main>
       
-      {/* Footer-like element */}
-      <footer className="py-12 border-t border-white/5 text-center text-gray-500 text-sm">
-        &copy; 2026 Code Pilot Inc. All rights reserved.
+      <footer className="border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 py-10">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+            <div>&copy; 2026 Code Pilot Inc.</div>
+            <nav className="flex items-center gap-5">
+              <a className="hover:text-gray-200 transition-colors" href="#features">Features</a>
+              <a className="hover:text-gray-200 transition-colors" href="/join">Join</a>
+              <a className="hover:text-gray-200 transition-colors" href="/dashboard">Dashboard</a>
+              <a
+                className="hover:text-gray-200 transition-colors"
+                href="https://github.com/mohithingorani/code-pilot"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
+            </nav>
+          </div>
+        </div>
       </footer>
     </div>
   );
