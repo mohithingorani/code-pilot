@@ -9,6 +9,13 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Seeding database...");
 
+  // Demo data is disabled by default for production.
+  // Set SEED_DEMO_USER=true to enable local/demo seeding.
+  if (process.env.SEED_DEMO_USER !== "true") {
+    console.log("Skipping demo user seed (set SEED_DEMO_USER=true to enable)");
+    return;
+  }
+
   // Create demo user
   const user = await prisma.user.upsert({
     where: { email: "demo@codepilot.com" },

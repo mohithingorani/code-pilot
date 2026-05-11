@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import axios from "axios";
+import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
 import SettingsModal from "@/components/SettingsModal";
@@ -64,8 +64,14 @@ export default function Dashboard() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.replace("/join");
+      return;
+    }
+
     fetchProjects();
-  }, [sortBy]);
+  }, [sortBy, router]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -83,9 +89,7 @@ export default function Dashboard() {
       const params = new URLSearchParams();
       params.set("sort", sortBy);
 
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects?${params.toString()}`
-      );
+      const res = await api.get(`/api/projects?${params.toString()}`);
       setProjects(res.data);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -97,7 +101,7 @@ export default function Dashboard() {
   const handleCreateProject = async () => {
     if (!newProjectName || !selectedLanguage) return;
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects`, {
+      const res = await api.post(`/api/projects`, {
         name: newProjectName,
         description: newProjectDesc,
         language: selectedLanguage,
@@ -115,7 +119,7 @@ export default function Dashboard() {
   const handleDeleteProject = async (id: string) => {
     if (!confirm("Are you sure you want to delete this project?")) return;
     try {
-      await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}`);
+      await api.delete(`/api/projects/${id}`);
       setProjects(projects.filter((p) => p.id !== id));
       setOpenMenuId(null);
     } catch (error) {
@@ -126,10 +130,10 @@ export default function Dashboard() {
   const handleEditProject = async () => {
     if (!editingProject || !editName.trim()) return;
     try {
-      const res = await axios.put(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${editingProject.id}`,
-        { name: editName, description: editDesc }
-      );
+      const res = await api.put(`/api/projects/${editingProject.id}`, {
+        name: editName,
+        description: editDesc,
+      });
       setProjects(projects.map((p) => (p.id === res.data.id ? res.data : p)));
       setShowEditModal(false);
       setEditingProject(null);
@@ -141,9 +145,7 @@ export default function Dashboard() {
 
   const handleCloneProject = async (id: string) => {
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}/clone`
-      );
+      const res = await api.post(`/api/projects/${id}/clone`);
       setProjects([res.data, ...projects]);
       setOpenMenuId(null);
     } catch (error) {
@@ -153,10 +155,9 @@ export default function Dashboard() {
 
   const handleExport = async (id: string, name: string) => {
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${id}/export`,
-        { responseType: "blob" }
-      );
+      const response = await api.get(`/api/projects/${id}/export`, {
+        responseType: "blob",
+      });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;

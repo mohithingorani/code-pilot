@@ -1,6 +1,7 @@
 import Router from "express";
 const router = Router();
 import { prisma } from "../lib/prisma.js";
+import { authenticate, AuthRequest } from "../middleware/auth.js";
 import archiver from "archiver";
 import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { Readable } from "stream";
@@ -17,17 +18,11 @@ const s3Client = new S3Client({
 
 const bucket = "codepilot-bucket";
 
+const getIdParam = (id: string | string[]): string => Array.isArray(id) ? id[0] : id;
+
 // Get all projects
-router.get("/", async (req, res) => {
+router.get("/", authenticate, async (req: AuthRequest, res) => {
   try {
-    const user = await prisma.user.findFirst({
-      where: { email: "demo@codepilot.com" },
-    });
-
-    if (!user) {
-      return res.json([]);
-    }
-
     const { sort = "updatedAt" } = req.query;
 
     const orderBy: any = {};
@@ -46,7 +41,7 @@ router.get("/", async (req, res) => {
     }
 
     const projects = await prisma.project.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: req.userId },
       orderBy,
     });
 
@@ -58,16 +53,12 @@ router.get("/", async (req, res) => {
 });
 
 // Create new project
-router.post("/", async (req, res) => {
+router.post("/", authenticate, async (req: AuthRequest, res) => {
   try {
     const { name, description, language } = req.body;
 
-    const user = await prisma.user.findFirst({
-      where: { email: "demo@codepilot.com" },
-    });
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (!name) {
+      return res.status(400).json({ error: "Project name is required" });
     }
 
     const project = await prisma.project.create({
@@ -76,7 +67,7 @@ router.post("/", async (req, res) => {
         description: description || "",
         language,
         status: "active",
-        ownerId: user.id,
+        ownerId: req.userId!,
       },
     });
 
@@ -88,11 +79,11 @@ router.post("/", async (req, res) => {
 });
 
 // Get single project
-router.get("/:id", async (req, res) => {
+router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const id = getIdParam(req.params.id);
+    const project = await prisma.project.findFirst({
+      where: { id, ownerId: req.userId },
       include: { files: true },
     });
 
@@ -108,10 +99,18 @@ router.get("/:id", async (req, res) => {
 });
 
 // Update project
-router.put("/:id", async (req, res) => {
+router.put("/:id", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req.params.id);
     const { name, description, language } = req.body;
+
+    const existingProject = await prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!existingProject || existingProject.ownerId !== req.userId) {
+      return res.status(404).json({ error: "Project not found" });
+    }
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
@@ -132,12 +131,12 @@ router.put("/:id", async (req, res) => {
 });
 
 // Clone project
-router.post("/:id/clone", async (req, res) => {
+router.post("/:id/clone", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req.params.id);
 
-    const originalProject = await prisma.project.findUnique({
-      where: { id },
+    const originalProject = await prisma.project.findFirst({
+      where: { id, ownerId: req.userId },
     });
 
     if (!originalProject) {
@@ -150,7 +149,7 @@ router.post("/:id/clone", async (req, res) => {
         description: originalProject.description,
         language: originalProject.language,
         status: "active",
-        ownerId: originalProject.ownerId,
+        ownerId: req.userId!,
         fileCount: originalProject.fileCount,
       },
     });
@@ -163,12 +162,12 @@ router.post("/:id/clone", async (req, res) => {
 });
 
 // Export project as ZIP
-router.get("/:id/export", async (req, res) => {
+router.get("/:id/export", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req.params.id);
 
-    const project = await prisma.project.findUnique({
-      where: { id },
+    const project = await prisma.project.findFirst({
+      where: { id, ownerId: req.userId },
     });
 
     if (!project) {
@@ -226,9 +225,18 @@ router.get("/:id/export", async (req, res) => {
 });
 
 // Delete project
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", authenticate, async (req: AuthRequest, res) => {
   try {
-    const { id } = req.params;
+    const id = getIdParam(req.params.id);
+
+    const project = await prisma.project.findFirst({
+      where: { id, ownerId: req.userId },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: "Project not found" });
+    }
+
     await prisma.project.delete({ where: { id } });
     res.json({ success: true });
   } catch (error) {

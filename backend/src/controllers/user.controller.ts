@@ -4,11 +4,13 @@ import { UserSchema } from "../lib/models.js";
 import { compare, hash } from "../lib/scrypt.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { Prisma } from "@prisma/client";
 
 dotenv.config();
 
 const createUser = async (req: Request, res: Response) => {
-  console.log("Creating user with data:", req.body);
+  // Avoid logging raw passwords.
+  console.log("Creating user:", { email: req.body?.email });
   const parsedData = UserSchema.safeParse(req.body);
 
   if (!parsedData.success) {
@@ -24,13 +26,24 @@ const createUser = async (req: Request, res: Response) => {
     const user = await prisma.user.create({
       data: {
         email,
-        password:hashedPassword,
+        password: hashedPassword,
       },
     });
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
     res.status(201).json({ user, token });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      // Unique constraint violation (eg. email already exists)
+      if (error.code === "P2002") {
+        return res.status(409).json({ error: "Email already exists" });
+      }
+    }
+
+    console.error("Failed to create user", {
+      email,
+      error,
+    });
     res.status(500).json({ error: "Failed to create user" });
   }
 };
@@ -58,9 +71,13 @@ try {
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
   res.status(200).json({ user, token });
 }
-catch (error) {
+ catch (error) {
+  console.error("Failed to sign in", {
+    email: req.body?.email,
+    error,
+  });
   res.status(500).json({ error: "Failed to sign in" });
-}
+ }
 };
 
 

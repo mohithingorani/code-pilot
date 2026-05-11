@@ -15,8 +15,8 @@ import NewFileModal from "@/components/editor/NewFileModal";
 import SettingsModal from "@/components/editor/SettingsModal";
 import ShortcutsModal from "@/components/editor/ShortcutsModal";
 import SplitEditor from "@/components/editor/SplitEditor";
-import { useParams } from "next/navigation";
-import axios from "axios";
+import { useParams, useRouter } from "next/navigation";
+import api from "@/lib/api";
 
 interface Project {
   id: string;
@@ -28,6 +28,7 @@ interface Project {
 
 export default function EditorPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.id as string;
 
   const [editorKey, setEditorKey] = useState(0);
@@ -58,9 +59,17 @@ export default function EditorPage() {
   const { settings, setSettings, getEditorOptions } = useEditorSettings();
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.replace("/join");
+    }
+  }, [router]);
+
+  useEffect(() => {
     if (projectId) {
-      axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/projects/${projectId}`)
-        .then(res => setProject(res.data))
+      api
+        .get(`/api/projects/${projectId}`)
+        .then((res) => setProject(res.data))
         .catch(console.error);
     }
   }, [projectId]);
