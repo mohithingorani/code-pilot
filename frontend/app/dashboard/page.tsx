@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import Image from "next/image";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
@@ -98,6 +98,17 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        setShowNewProject(false);
+        setShowSettings(false);
+        setShowEditModal(false);
+      }
+    });
+
+  }, []);
 
   const handleCreateProject = async () => {
     if (!newProjectName || !selectedLanguage) return;
@@ -275,7 +286,7 @@ export default function Dashboard() {
                 </button>
 
                 <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-                  <span className="text-black font-semibold">M</span>
+                  <span className="text-black font-semibold"></span>
                 </div>
               </div>
             </div>

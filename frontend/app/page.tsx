@@ -52,11 +52,11 @@ export default function Home() {
                 const token = localStorage.getItem("token");
                 router.push(token ? "/dashboard" : "/join");
               }}
-              className="px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-gray-100 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              className="w-xs md:w-auto px-4 py-2 md:px-8 md:py-4 bg-white text-black rounded-xl md:text-lg hover:bg-gray-100 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
             >
               Start Coding Now
             </motion.button>
-            <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-xl font-medium text-lg hover:bg-white/10 transition-colors backdrop-blur-sm">
+            <button className="w-xs md:w-auto px-4 py-2 md:px-8 md:py-4 bg-white/12 border border-white/5 rounded-xl md:text-lg hover:bg-white/10 transition-colors backdrop-blur-sm">
               Watch Demo
             </button>
           </motion.div>
