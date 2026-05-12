@@ -500,7 +500,7 @@ export default function Dashboard() {
             ) : filteredProjects.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-[50%] text-gray-500">
                 <div className="relative mb-5">
-                  <div className="w-16 h-16 rounded-xl bg-white/[0.05] flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-xl bg-white/5 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
                       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                     </svg>
@@ -594,7 +594,7 @@ export default function Dashboard() {
                       key={lang.name}
                       onClick={() => setSelectedLanguage(lang.name)}
                       className={`p-3 rounded-lg border transition flex flex-col items-center gap-1.5 ${
-                        selectedLanguage === lang.name ? "border-white/30 bg-white/[0.06]" : "border-white/[0.06] hover:border-white/[0.15]"
+                        selectedLanguage === lang.name ? "border-white/30 bg-white/6" : "border-white/6 hover:border-white/[0.15]"
                       }`}
                     >
                       <div className="w-6 h-6 rounded bg-white/[0.05] flex items-center justify-center">
@@ -698,10 +698,10 @@ function ProjectCard({ project, onOpenMenu, isMenuOpen, onEdit, onClone, onDelet
   return (
     <div 
       onClick={onOpen}
-      className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-150 cursor-pointer group relative"
+      className="bg-white/3 border border-white/6 rounded-xl p-4 hover:bg-white/6 hover:border-white/12 transition-all duration-150 cursor-pointer group relative"
     >
       <div className="flex justify-between items-start mb-3">
-        <div className="w-10 h-10 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center overflow-hidden">
+        <div className="w-10 h-10 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center overflow-hidden">
           <span className="text-lg font-medium text-white/80">{project.name.charAt(0).toUpperCase()}</span>
         </div>
         <div className="flex items-center gap-0.5">
@@ -834,9 +834,9 @@ function ProjectListItem({ project, onOpenMenu, isMenuOpen, onEdit, onClone, onD
   return (
     <div 
       onClick={onOpen}
-      className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 py-2.5 hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-150 cursor-pointer group flex items-center gap-3 relative"
+      className="bg-white/3 border border-white/6 rounded-lg px-3 py-2.5 hover:bg-white/6 hover:border-white/12 transition-all duration-150 cursor-pointer group flex items-center gap-3 relative"
     >
-      <div className="w-8 h-8 rounded-md bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
+      <div className="w-8 h-8 rounded-md bg-white/5 border border-white/8 flex items-center justify-center shrink-0">
         <span className="text-sm font-medium text-white/80">{project.name.charAt(0).toUpperCase()}</span>
       </div>
       <div className="flex-1 min-w-0">
@@ -851,7 +851,7 @@ function ProjectListItem({ project, onOpenMenu, isMenuOpen, onEdit, onClone, onD
         </div>
         <p className="text-gray-500 text-xs truncate">{project.description || "No description"}</p>
       </div>
-      <span className="hidden sm:inline text-gray-500 text-xs shrink-0 flex items-center gap-1">
+      <span className="hidden sm:inline text-gray-500 text-xs shrink-0 items-center gap-1">
         <svg xmlns="http://www.w3.org/2000/svg" width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
           <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
         </svg>
