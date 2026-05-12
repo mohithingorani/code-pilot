@@ -7,48 +7,52 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
   const startupBufferRef = useRef("");
   const startupDoneRef = useRef(false);
   const startupFlushTimerRef = useRef<number | null>(null);
-
-
-  const scrollToBottom = () => {
-    if(!terminalRef.current) return;
-    terminalRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-  };
-
+  const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null);
+  const resizeHandlerRef = useRef<(() => void) | null>(null);
+  const termRef = useRef<import("xterm").Terminal | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     let term: import("xterm").Terminal | null = null;
     let fitAddon: import("xterm-addon-fit").FitAddon | null = null;
     let dispose = false;
+    let currentSocket: WebSocket | null = null;
+
     const init = async () => {
       const { Terminal } = await import("xterm");
       const { FitAddon } = await import("xterm-addon-fit");
 
       if (dispose) return;
+      if (!socket) return;
+      if (!terminalRef.current) return;
+
+      currentSocket = socket;
+      socketRef.current = socket;
 
       term = new Terminal({
         cursorBlink: true,
         fontSize: 14,
         scrollback: 2000,
       });
+      termRef.current = term;
 
       fitAddon = new FitAddon();
       term.loadAddon(fitAddon);
-
-      if (!socket) return;
-      if (!terminalRef.current) return;
 
       term.open(terminalRef.current);
       fitAddon.fit();
       term.focus();
 
-      // Fit once more after layout settles (drawer animation/paint).
       requestAnimationFrame(() => fitAddon?.fit());
 
       const handleResize = () => fitAddon?.fit();
+      resizeHandlerRef.current = handleResize;
       window.addEventListener("resize", handleResize);
 
       term.onData((data: string) => {
-        socket.send(JSON.stringify({ type: "terminal", payload: { data } }));
+        if (socketRef.current?.readyState === WebSocket.OPEN) {
+          socketRef.current.send(JSON.stringify({ type: "terminal", payload: { data } }));
+        }
       });
 
       const handleMessage = (event: MessageEvent) => {
@@ -58,10 +62,6 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
           if (parsed.type === "terminal") {
             const chunk = String(parsed.payload?.data ?? "");
 
-            // Startup noise filter:
-            // Some environments emit a glitched/garbled line right before the first prompt.
-            // To keep the terminal clean without changing shell config, buffer until we see
-            // the first prompt, then render only from the prompt onward.
             if (!startupDoneRef.current) {
               startupBufferRef.current += chunk;
 
@@ -83,7 +83,6 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
                 }
                 term?.write(cleaned);
               } else {
-                // Safety valve: if the prompt never shows up, don't buffer forever.
                 if (startupBufferRef.current.length > 16_384) {
                   startupDoneRef.current = true;
                   term?.write(startupBufferRef.current);
@@ -96,40 +95,43 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
             term?.write(chunk);
           }
         } catch {
-          // Ignore non-JSON messages.
         }
       };
 
-      socket.addEventListener("message", handleMessage);
-
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        socket.removeEventListener("message", handleMessage);
-      };
+      messageHandlerRef.current = handleMessage;
+      currentSocket.addEventListener("message", handleMessage);
     };
 
-    let cleanupSocketHandlers: undefined | (() => void);
-    init().then((cleanup) => {
-      cleanupSocketHandlers = typeof cleanup === "function" ? cleanup : undefined;
-    });
+    init();
 
     return () => {
       dispose = true;
-      cleanupSocketHandlers?.();
-      startupDoneRef.current = false;
-      startupBufferRef.current = "";
+
+      if (resizeHandlerRef.current) {
+        window.removeEventListener("resize", resizeHandlerRef.current);
+        resizeHandlerRef.current = null;
+      }
+
+      if (messageHandlerRef.current && currentSocket) {
+        currentSocket.removeEventListener("message", messageHandlerRef.current);
+        messageHandlerRef.current = null;
+      }
+
       if (startupFlushTimerRef.current != null) {
         window.clearTimeout(startupFlushTimerRef.current);
         startupFlushTimerRef.current = null;
       }
+
+      startupDoneRef.current = false;
+      startupBufferRef.current = "";
+      socketRef.current = null;
+
       term?.dispose();
-      // Important: do not close the shared websocket here.
+      termRef.current = null;
     };
   }, [socket]);
 
   useEffect(() => {
-    // If we haven't seen a prompt shortly after mount, flush whatever we have.
-    // This prevents a blank terminal if the prompt marker changes.
     if (!socket) return;
 
     if (startupFlushTimerRef.current != null) {
@@ -139,8 +141,6 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
     startupFlushTimerRef.current = window.setTimeout(() => {
       if (startupDoneRef.current) return;
       startupDoneRef.current = true;
-      // We only flush here if xterm is already open; if not, the buffer will be
-      // handled on the next chunk.
     }, 1500);
 
     return () => {
