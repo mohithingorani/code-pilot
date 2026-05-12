@@ -5,8 +5,37 @@ import { compare, hash } from "../lib/scrypt.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { Prisma } from "@prisma/client";
+import { AuthRequest } from "../middleware/auth.js";
 
 dotenv.config();
+
+const getMe = async (req: Request, res: Response) => {
+  const userId = (req as AuthRequest).userId;
+
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Failed to get user", { error });
+    res.status(500).json({ error: "Failed to get user" });
+  }
+};
 
 const createUser = async (req: Request, res: Response) => {
   // Avoid logging raw passwords.
@@ -81,4 +110,4 @@ try {
 };
 
 
-export { createUser, userSignin };
+export { createUser, userSignin, getMe };

@@ -3,6 +3,7 @@
 import NavBar from "@/components/NavBar2";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import PreviewSection from "@/components/PreviewSection";
 
 export default function Home() {
   const router = useRouter();
@@ -14,16 +15,14 @@ export default function Home() {
       <main className="relative pt-32 pb-16 px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center">
         
         {/* Hero Section */}
-        <section className="relative z-10 py-20 md:py-32 flex flex-col items-center text-center">
-     
-
+        <section className="relative z-10 py-20 md:py-28 flex flex-col items-center text-center">
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-6xl md:text-8xl font-bold tracking-tight mb-8 leading-[0.95]"
+            className="text-6xl md:text-8xl font-bold tracking-tight mb-6 leading-[0.95]"
           >
-            <span className="inline-block pb-2 bg-linear-to-b from-white to-gray-500 bg-clip-text text-transparent">
+            <span className="bg-linear-to-b from-white to-gray-500 bg-clip-text text-transparent">
               Code at the speed <br /> of thought.
             </span>
           </motion.h1>
@@ -32,17 +31,16 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="add md:text-xl text-gray-400 mb-12 max-w-2xl leading-relaxed"
+            className="md:text-xl text-white/50 mb-10 max-w-xl leading-relaxed"
           >
-            Code Pilot is the world&apos;s most advanced real-time collaborative IDE
-            with integrated AI that actually understands your intent.
+            Real-time collaborative IDE for teams who ship faster.
           </motion.p>
 
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 items-center"
+            className="flex flex-col sm:flex-row gap-3 items-center"
           >
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -52,34 +50,41 @@ export default function Home() {
                 const token = localStorage.getItem("token");
                 router.push(token ? "/dashboard" : "/join");
               }}
-              className="w-xs md:w-auto px-4 py-2 md:px-8 md:py-4 bg-white text-black rounded-xl md:text-lg hover:bg-gray-100 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+              className="px-6 py-2.5 bg-white text-black rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
             >
-              Start Coding Now
+              Start Coding
             </motion.button>
-            <button className="w-xs md:w-auto px-4 py-2 md:px-8 md:py-4 bg-white/12 border border-white/5 rounded-xl md:text-lg hover:bg-white/10 transition-colors backdrop-blur-sm">
+            <button className="px-6 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm hover:bg-white/10 transition-colors">
               Watch Demo
             </button>
           </motion.div>
         </section>
 
+        {/* Preview Section with Tabs */}
+        <section className="w-full py-24 border-t border-white/5">
+          <div className="max-w-3xl mx-auto">
+            <PreviewSection />
+          </div>
+        </section>
+
         {/* Features Grid */}
-        <section id="features" className="w-full py-24 border-t border-white/5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section id="features" className="w-full py-20 border-t border-white/5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
+                num: "01",
                 title: "Real-time Sync",
-                desc: "Zero-latency collaboration. Watch your teammates code in real-time without the lag.",
-                icon: "⚡"
+                desc: "Zero-latency collaboration. Watch your teammates code in real-time without the lag."
               },
               {
+                num: "02",
                 title: "Contextual AI",
-                desc: "An AI pair programmer that knows your whole codebase, not just the file you're in.",
-                icon: "🧠"
+                desc: "An AI pair programmer that knows your whole codebase, not just the file you're in."
               },
               {
+                num: "03",
                 title: "Cloud Dev Environments",
-                desc: "Spin up a full development environment in seconds. No more 'works on my machine'.",
-                icon: "☁️"
+                desc: "Spin up a full development environment in seconds. No more 'works on my machine'."
               }
             ].map((feature, i) => (
               <motion.div
@@ -88,15 +93,16 @@ export default function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="group relative p-8 rounded-3xl bg-gradient-to-b from-white/[0.05] to-transparent backdrop-blur-2xl border border-white/10 hover:border-white/20 transition-all duration-500 shadow-2xl overflow-hidden"
+                whileHover={{ y: -2 }}
+                className="group relative p-6 rounded-2xl border border-white/10 hover:border-white/20 transition-all cursor-pointer"
               >
-                {/* Decorative glow */}
-                <div className="absolute -inset-x-20 -top-20 h-40 w-80 bg-white/[0.03] blur-3xl group-hover:bg-white/[0.07] transition-colors duration-500" />
-                
-                <div className="relative z-10">
-                  <div className="text-4xl mb-6">{feature.icon}</div>
-                  <h3 className="text-xl font-bold mb-3 text-white/90 group-hover:text-white transition-colors">{feature.title}</h3>
-                  <p className="text-gray-400 leading-relaxed group-hover:text-gray-300 transition-colors">{feature.desc}</p>
+                <span className="text-xs font-mono text-white/30 mb-3 block group-hover:text-white/40 transition-colors">{feature.num}</span>
+                <h3 className="text-base font-medium mb-2 text-white/80 group-hover:text-white/90 transition-colors">{feature.title}</h3>
+                <p className="text-sm text-white/40 leading-relaxed group-hover:text-white/50 transition-colors">{feature.desc}</p>
+                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg className="w-4 h-4 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
                 </div>
               </motion.div>
             ))}

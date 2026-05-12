@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
 import SettingsModal from "@/components/SettingsModal";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Project {
   id: string;
@@ -61,8 +62,23 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState<"lastEditedAt" | "name" | "createdAt">("lastEditedAt");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const { settings: dashboardSettings, updateSettings } = useDashboardSettings();
   const menuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await api.get("/api/users/me");
+        setUserEmail(res.data.email || "");
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -70,7 +86,6 @@ export default function Dashboard() {
       router.replace("/join");
       return;
     }
-
     fetchProjects();
   }, [sortBy, router]);
 
@@ -78,6 +93,9 @@ export default function Dashboard() {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpenMenuId(null);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -89,7 +107,6 @@ export default function Dashboard() {
       setLoading(true);
       const params = new URLSearchParams();
       params.set("sort", sortBy);
-
       const res = await api.get(`/api/projects?${params.toString()}`);
       setProjects(res.data);
     } catch (error) {
@@ -100,14 +117,15 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    document.addEventListener("keydown", (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setShowNewProject(false);
         setShowSettings(false);
         setShowEditModal(false);
       }
-    });
-
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleCreateProject = async () => {
@@ -200,15 +218,14 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="min-h-[100svh] min-h-screen text-white selection:bg-white/20 overflow-x-hidden">
+    <div className="min-h-screen text-white selection:bg-white/20 overflow-x-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-linear-to-b from-[#0f0f0f] via-black to-black" />
-        <div className="absolute -top-24 -right-24 w-[320px] h-[320px] sm:w-[520px] sm:h-[520px] lg:w-[600px] lg:h-[600px] bg-white/4 sm:bg-white/5 rounded-full blur-[90px] sm:blur-[150px] pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-[320px] h-80 sm:w-130 sm:h-130 lg:w-150 lg:h-150 bg-white/4 sm:bg-white/5 rounded-full blur-[90px] sm:blur-[150px] pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-70 h-70 sm:w-110 sm:h-110 lg:w-125 lg:h-125 bg-white/3 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none" />
       </div>
 
       <div className="relative z-10 min-h-screen flex">
-        {/* Mobile Sidebar Drawer */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <button
@@ -217,24 +234,16 @@ export default function Dashboard() {
               aria-label="Close sidebar"
             />
             <div className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-black/50 backdrop-blur-xl border-r border-white/10 flex flex-col">
-              <Sidebar
-                onOpenSettings={() => {
-                  setShowSettings(true);
-                  setSidebarOpen(false);
-                }}
-              />
+              <Sidebar onOpenSettings={() => { setShowSettings(true); setSidebarOpen(false); }} />
             </div>
           </div>
         )}
 
-        {/* Left Sidebar (Desktop) */}
         <div className="hidden lg:flex w-64 bg-black/30 backdrop-blur-xl border-r border-white/5 flex-col">
           <Sidebar onOpenSettings={() => setShowSettings(true)} />
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          {/* Top Bar */}
           <div className="bg-black/20 backdrop-blur-xl border-b border-white/5 px-4 sm:px-6 py-3">
             <div className="sm:hidden flex items-center justify-between gap-3">
               <button
@@ -251,42 +260,54 @@ export default function Dashboard() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
-                  title={viewMode === "grid" ? "List view" : "Grid view"}
-                >
-                  {viewMode === "grid" ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                      <line x1={8} y1={6} x2={21} y2={6} />
-                      <line x1={8} y1={12} x2={21} y2={12} />
-                      <line x1={8} y1={18} x2={21} y2={18} />
-                      <line x1={3} y1={6} x2={3.01} y2={6} />
-                      <line x1={3} y1={12} x2={3.01} y2={12} />
-                      <line x1={3} y1={18} x2={3.01} y2={18} />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
-                      <rect x={3} y={3} width={7} height={7} />
-                      <rect x={14} y={3} width={7} height={7} />
-                      <rect x={14} y={14} width={7} height={7} />
-                      <rect x={3} y={14} width={7} height={7} />
-                    </svg>
-                  )}
-                </button>
-
-                <button
                   onClick={() => setShowSettings(true)}
-                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition group"
-                  aria-label="Open preferences"
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 group-hover:text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
                     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                     <circle cx={12} cy={12} r={3} />
                   </svg>
                 </button>
 
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-                  <span className="text-black font-semibold"></span>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
+                >
+                  <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center">
+                    <span className="text-white/60 text-xs font-semibold">{userEmail ? userEmail[0].toUpperCase() : ""}</span>
+                  </div>
+                </button>
+
+                <div className="relative" ref={userMenuRef}>
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 bg-[#0f0f0f] border border-white/10 rounded-xl py-2 w-56 shadow-xl z-50"
+                      >
+                        <div className="px-4 py-2 border-b border-white/5">
+                          <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem("token");
+                            router.replace("/");
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1={21} x2={9} y1={12} y2={12} />
+                          </svg>
+                          Sign out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
@@ -305,7 +326,6 @@ export default function Dashboard() {
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-white/30 transition text-sm"
                 />
               </div>
-
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
@@ -379,14 +399,50 @@ export default function Dashboard() {
                   </svg>
                 </button>
 
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
-                  <span className="text-black font-semibold">M</span>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-white/30 transition"
+                >
+                  <div className="w-5 h-5 rounded bg-white/20 flex items-center justify-center">
+                    <span className="text-white/60 text-xs font-semibold">{userEmail ? userEmail[0].toUpperCase() : ""}</span>
+                  </div>
+                </button>
+
+                <div className="relative" ref={userMenuRef}>
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 bg-[#0f0f0f] border border-white/10 rounded-xl py-2 w-56 shadow-xl z-50"
+                      >
+                        <div className="px-4 py-2 border-b border-white/5">
+                          <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            localStorage.removeItem("token");
+                            router.replace("/");
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-sm text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center gap-2"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1={21} x2={9} y1={12} y2={12} />
+                          </svg>
+                          Sign out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Content Area */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 sm:mb-8">
               <div>
@@ -405,11 +461,10 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Filters */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <button
                 onClick={() => setFilterStatus("all")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap shrink-0 ${
                   filterStatus === "all" ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -417,7 +472,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={() => setFilterStatus("active")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap shrink-0 ${
                   filterStatus === "active" ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -425,7 +480,7 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={() => setFilterStatus("idle")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap shrink-0 ${
                   filterStatus === "idle" ? "bg-white text-black" : "text-gray-500 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -433,7 +488,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Projects */}
             {loading ? (
               <div className="flex items-center justify-center h-40">
                 <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -485,7 +539,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* New Project Modal */}
       {showNewProject && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -522,9 +575,7 @@ export default function Dashboard() {
                       key={lang.name}
                       onClick={() => setSelectedLanguage(lang.name)}
                       className={`p-4 rounded-xl border transition flex flex-col items-center gap-2 ${
-                        selectedLanguage === lang.name
-                          ? "border-white bg-white/10"
-                          : "border-white/10 hover:border-white/30"
+                        selectedLanguage === lang.name ? "border-white bg-white/10" : "border-white/10 hover:border-white/30"
                       }`}
                     >
                       <Image src={lang.icon} width={28} height={28} alt={lang.name} />
@@ -553,7 +604,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Edit Project Modal */}
       {showEditModal && editingProject && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -583,10 +633,7 @@ export default function Dashboard() {
             </div>
             <div className="p-6 border-t border-white/5 flex gap-3">
               <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingProject(null);
-                }}
+                onClick={() => { setShowEditModal(false); setEditingProject(null); }}
                 className="flex-1 px-4 py-3 rounded-xl border border-white/20 text-white hover:bg-white/5 transition font-medium"
               >
                 Cancel
@@ -603,81 +650,43 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         settings={dashboardSettings}
         onUpdate={updateSettings}
       />
-
-      {openMenuId && (
-        <div ref={menuRef} />
-      )}
     </div>
   );
 }
 
-function ProjectCard({
-  project,
-  onOpenMenu,
-  isMenuOpen,
-  onEdit,
-  onClone,
-  onDelete,
-  onExport,
-  onOpen,
-}: {
-  project: Project;
-  onOpenMenu: () => void;
-  isMenuOpen: boolean;
-  onEdit: () => void;
-  onClone: () => void;
-  onDelete: () => void;
-  onExport: () => void;
-  onOpen: () => void;
+function ProjectCard({ project, onOpenMenu, isMenuOpen, onEdit, onClone, onDelete, onExport, onOpen }: {
+  project: Project; onOpenMenu: () => void; isMenuOpen: boolean; onEdit: () => void; onClone: () => void;
+  onDelete: () => void; onExport: () => void; onOpen: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onOpenMenu();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onOpenMenu();
     };
-    if (isMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    if (isMenuOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen]);
 
   return (
-    <div
-      onClick={onOpen}
-      className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-white/20 transition cursor-pointer group relative"
-    >
+    <div onClick={onOpen} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 hover:border-white/20 transition cursor-pointer group relative">
       <div className="flex justify-between items-start mb-4">
         <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden">
-          <span className="text-2xl font-bold text-white">
-            {project.name.charAt(0).toUpperCase()}
-          </span>
+          <span className="text-2xl font-bold text-white">{project.name.charAt(0).toUpperCase()}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenMenu();
-            }}
-            className="p-1.5 rounded-lg hover:bg-white/10 transition"
-          >
+          <button onClick={(e) => { e.stopPropagation(); onOpenMenu(); }} className="p-1.5 rounded-lg hover:bg-white/10 transition">
             <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="text-gray-500">
-              <circle cx={12} cy={12} r={1} />
-              <circle cx={19} cy={12} r={1} />
-              <circle cx={5} cy={12} r={1} />
+              <circle cx={12} cy={12} r={1} /><circle cx={19} cy={12} r={1} /><circle cx={5} cy={12} r={1} />
             </svg>
           </button>
           {isMenuOpen && (
-            <div ref={menuRef} className="absolute right-4 top-14 z-50 bg-[#1a1a1a] border border-white/10 rounded-xl py-1 min-w-[160px] shadow-xl">
+            <div ref={menuRef} className="absolute right-4 top-14 z-50 bg-[#1a1a1a] border border-white/10 rounded-xl py-1 min-w-40 shadow-xl">
               <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
                 Edit
@@ -707,11 +716,7 @@ function ProjectCard({
   );
 }
 
-function Sidebar({
-  onOpenSettings,
-}: {
-  onOpenSettings: () => void;
-}) {
+function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
     <>
       <div className="p-5 border-b border-white/5">
@@ -725,20 +730,9 @@ function Sidebar({
           </div>
         </div>
       </div>
-
       <div className="p-4 space-y-1">
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/10 text-white font-medium">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 12h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
             <path d="M14 12h6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z" />
             <path d="M2 4v4a2 2 0 0 0 2 2h6" />
@@ -747,84 +741,29 @@ function Sidebar({
           Projects
         </button>
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx={12} cy={12} r={10} />
-            <path d="M12 16v-4" />
-            <path d="M12 8h.01" />
+          <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx={12} cy={12} r={10} /><path d="M12 16v-4" /><path d="M12 8h.01" />
           </svg>
           Explore
         </button>
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-            <circle cx={9} cy={7} r={4} />
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx={9} cy={7} r={4} /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
           </svg>
           Team
         </button>
       </div>
-
       <div className="flex-1" />
-
       <div className="p-4 border-t border-white/5 space-y-1">
         <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-            <circle cx={12} cy={7} r={4} />
+          <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx={12} cy={7} r={4} />
           </svg>
           Account
         </button>
-        <button
-          onClick={onOpenSettings}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect width={18} height={18} x={3} y={3} rx={2} ry={2} />
-            <circle cx={9} cy={9} r={1} />
-            <circle cx={15} cy={9} r={1} />
-            <circle cx={9} cy={15} r={1} />
-            <circle cx={15} cy={15} r={1} />
+        <button onClick={onOpenSettings} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <rect width={18} height={18} x={3} y={3} rx={2} ry={2} /><circle cx={9} cy={9} r={1} /><circle cx={15} cy={9} r={1} /><circle cx={9} cy={15} r={1} /><circle cx={15} cy={15} r={1} />
           </svg>
           Preferences
         </button>
@@ -833,44 +772,21 @@ function Sidebar({
   );
 }
 
-function ProjectListItem({
-  project,
-  onOpenMenu,
-  isMenuOpen,
-  onEdit,
-  onClone,
-  onDelete,
-  onExport,
-  onOpen,
-}: {
-  project: Project;
-  onOpenMenu: () => void;
-  isMenuOpen: boolean;
-  onEdit: () => void;
-  onClone: () => void;
-  onDelete: () => void;
-  onExport: () => void;
-  onOpen: () => void;
+function ProjectListItem({ project, onOpenMenu, isMenuOpen, onEdit, onClone, onDelete, onExport, onOpen }: {
+  project: Project; onOpenMenu: () => void; isMenuOpen: boolean; onEdit: () => void; onClone: () => void;
+  onDelete: () => void; onExport: () => void; onOpen: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onOpenMenu();
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) onOpenMenu();
     };
-    if (isMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+    if (isMenuOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMenuOpen]);
 
   return (
-    <div
-      onClick={onOpen}
-      className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 hover:border-white/20 transition cursor-pointer group flex items-center gap-3 sm:gap-4 relative"
-    >
+    <div onClick={onOpen} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 hover:border-white/20 transition cursor-pointer group flex items-center gap-3 sm:gap-4 relative">
       <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
         <span className="text-lg font-bold text-white">{project.name.charAt(0).toUpperCase()}</span>
       </div>
@@ -880,27 +796,16 @@ function ProjectListItem({
       </div>
       <span className="hidden sm:inline text-gray-600 text-sm shrink-0">{project.language}</span>
       <span className="hidden md:inline text-gray-600 text-sm shrink-0">{formatRelativeTime(project.lastEditedAt)}</span>
-      <span
-        className={`hidden sm:inline-flex px-2 py-1 rounded-full text-xs shrink-0 ${
-          project.status === "active"
-            ? "bg-emerald-500/20 text-emerald-400"
-            : "bg-white/5 text-gray-500"
-        }`}
-      >
+      <span className={`hidden sm:inline-flex px-2 py-1 rounded-full text-xs shrink-0 ${project.status === "active" ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-gray-500"}`}>
         {project.status}
       </span>
-      <button
-        onClick={(e) => { e.stopPropagation(); onOpenMenu(); }}
-        className="p-2 rounded-lg hover:bg-white/10 transition shrink-0"
-      >
+      <button onClick={(e) => { e.stopPropagation(); onOpenMenu(); }} className="p-2 rounded-lg hover:bg-white/10 transition shrink-0">
         <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="text-gray-500">
-          <circle cx={12} cy={12} r={1} />
-          <circle cx={19} cy={12} r={1} />
-          <circle cx={5} cy={12} r={1} />
+          <circle cx={12} cy={12} r={1} /><circle cx={19} cy={12} r={1} /><circle cx={5} cy={12} r={1} />
         </svg>
       </button>
       {isMenuOpen && (
-        <div ref={menuRef} className="absolute right-4 top-full z-50 bg-[#1a1a1a] border border-white/10 rounded-xl py-1 min-w-[160px] shadow-xl mt-1">
+        <div ref={menuRef} className="absolute right-4 top-full z-50 bg-[#1a1a1a] border border-white/10 rounded-xl py-1 min-w-40 shadow-xl mt-1">
           <button onClick={(e) => { e.stopPropagation(); onEdit(); }} className="w-full px-4 py-2 text-left text-sm hover:bg-white/10 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></svg>
             Edit
