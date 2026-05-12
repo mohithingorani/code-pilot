@@ -2,6 +2,8 @@
 
 A modern online IDE with real-time code editing, integrated terminal, and project management.
 
+![System Architecture](assets/system-architecture.jpg)
+
 ## Features
 
 - **Monaco Editor** - Full-featured code editing with syntax highlighting, IntelliSense, and debugging support
