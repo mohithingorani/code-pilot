@@ -65,7 +65,6 @@ export default function NavBar() {
                         </motion.button>
                         <button
                             onClick={() => setShowUserMenu(!showUserMenu)}
-                            onMouseEnter={() => setShowUserMenu(true)}
                             className="p-2 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition"
                         >
                             <div className="w-6 h-6 rounded bg-white/20 flex items-center justify-center">
@@ -109,7 +108,7 @@ export default function NavBar() {
                         whileTap={{ scale: 0.95 }}
                         type="button"
                         onClick={() => router.push("/join")}
-                        className="bg-white text-black px-5 py-2 rounded-md text-sm font-bold hover:bg-gray-200 transition-colors"
+                        className="bg-white text-black px-5 py-2 rounded-md text-sm  hover:bg-gray-200 transition-colors"
                     >
                         Get Started
                     </motion.button>
