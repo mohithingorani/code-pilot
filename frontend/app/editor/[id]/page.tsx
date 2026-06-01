@@ -147,14 +147,22 @@ case "typescript":
     monaco.editor.defineTheme("my-custom-theme", {
       base: "vs-dark", inherit: true,
       rules: [
-        { token: "", foreground: "FFFFFF", background: "222222" },
-        { token: "keyword", foreground: "569CD6" },
-        { token: "identifier", foreground: "9CDCFE" },
-        { token: "string", foreground: "CE9178" },
+        { token: "", foreground: "ECE9E1", background: "0B0B0B" },
+        { token: "keyword", foreground: "9CB8FF" },
+        { token: "identifier", foreground: "C9D4E3" },
+        { token: "string", foreground: "D8FF3E" },
         { token: "number", foreground: "B5CEA8" },
-        { token: "comment", foreground: "6A9955", fontStyle: "italic" },
+        { token: "comment", foreground: "5C5C54", fontStyle: "italic" },
       ],
-      colors: { "editor.background": "#141414" },
+      colors: {
+        "editor.background": "#0b0b0b",
+        "editor.lineHighlightBackground": "#ffffff08",
+        "editorLineNumber.foreground": "#ece9e133",
+        "editorLineNumber.activeForeground": "#d8ff3e",
+        "editorCursor.foreground": "#d8ff3e",
+        "editor.selectionBackground": "#d8ff3e26",
+        "editorIndentGuide.background1": "#ffffff0d",
+      },
     });
   };
 
@@ -226,95 +234,170 @@ case "typescript":
     return () => socket.removeEventListener("message", handler);
   }, [socket]);
 
+  const activeFile = files[selectedFileIndex];
+
   return (
-    <div className="w-full min-h-screen flex justify-center items-center px-4 py-8 sm:px-6 sm:py-12">
-      <div className="w-full max-w-6xl h-[90dvh] rounded-2xl border border-white/10 bg-neutral-950/55 backdrop-blur-xl shadow-2xl ring-1 ring-white/5">
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-neutral-950/80 backdrop-blur-sm rounded-2xl z-20">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              <span className="text-sm text-white/60">Loading workspace...</span>
-            </div>
+    <div className="relative z-10 flex h-[100dvh] w-full flex-col bg-ink text-paper">
+      {loading && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/90 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-paper/15 border-t-acid" />
+            <span className="font-mono text-xs uppercase tracking-[0.25em] text-paper/50">
+              Booting workspace…
+            </span>
           </div>
-        )}
-        <div className="h-full w-full bg-linear-to-b from-black/10 via-black/10 to-black/25">
-          <div className="h-full grid grid-cols-1 md:grid-cols-[320px_1fr]">
-            <aside className="hidden md:flex flex-col text-white border-r border-white/10">
-              <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-sm tracking-wide text-white/80">Workspace</span>
-                <span className={`text-[11px] px-2 py-1 rounded-full border ${connected ? "border-emerald-400/30 text-emerald-200 bg-emerald-400/10" : "border-white/10 text-white/60 bg-white/5"}`}>
-                  {connected ? "Connected" : "Connecting"}
+        </div>
+      )}
+
+      {/* ── Top bar ──────────────────────────────────────────── */}
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-paper/10 bg-ink px-3 sm:px-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            onClick={() => setSidebarOpenMobile(true)}
+            className="flex items-center justify-center border border-paper/15 bg-paper/5 px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-wider text-paper/70 transition-colors hover:border-paper/30 md:hidden"
+          >
+            Files
+          </button>
+          <button
+            onClick={() => router.push("/dashboard")}
+            title="Back to dashboard"
+            className="hidden items-center gap-2 text-paper/60 transition-colors hover:text-paper sm:flex"
+          >
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            <span className="font-display text-sm font-bold uppercase tracking-tight">
+              Code<span className="text-acid">/</span>Pilot
+            </span>
+          </button>
+          <span className="hidden h-5 w-px bg-paper/10 sm:block" />
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate font-display text-sm font-medium text-paper/90">
+              {project?.name ?? "Untitled project"}
+            </span>
+            {currentLanguage && (
+              <span className="hidden shrink-0 border border-paper/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-acid sm:inline-block">
+                {currentLanguage}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="mr-1 hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-paper/45 sm:flex">
+            <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-acid" : "animate-pulse bg-paper/40"}`} />
+            {connected ? "Live" : "Linking"}
+          </span>
+          <button
+            onClick={handleSplitView}
+            title="Split view"
+            className={`flex items-center gap-1.5 border px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+              splitFileIndex !== null
+                ? "border-acid/60 text-acid"
+                : "border-paper/15 text-paper/70 hover:border-paper/30 hover:text-paper"
+            }`}
+          >
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <rect x={3} y={3} width={18} height={18} rx={1} />
+              <line x1={12} y1={3} x2={12} y2={21} />
+            </svg>
+            <span className="hidden sm:inline">Split</span>
+          </button>
+          <button
+            onClick={handleRun}
+            title="Run code (Ctrl+Enter)"
+            className="flex items-center gap-1.5 bg-acid px-4 py-1.5 font-mono text-[11px] font-medium uppercase tracking-wider text-ink transition-transform hover:-translate-y-0.5"
+          >
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            Run
+          </button>
+        </div>
+      </header>
+
+      {/* ── Body ─────────────────────────────────────────────── */}
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-[280px] shrink-0 flex-col border-r border-paper/10 bg-[#070707] md:flex">
+          <EditorOptions editorRef={editorRef} onAddFile={() => setShowNewFileModal(true)} onToggleSettings={() => setShowSettings(true)} onToggleShortcuts={() => setShowShortcuts(true)} />
+          <div className="flex-1 overflow-auto pb-4 [scrollbar-width:thin]">
+            <FileStructure removeFile={handleRemoveFile} selected={selectedFileIndex} onClick={handleFileClick} files={files} addFolder={handleAddFolder} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
+          </div>
+        </aside>
+
+        <section className="flex min-w-0 flex-1 flex-col">
+          <HeadingTabs selectedFile={selectedFileIndex} files={files} onClick={handleFileClick} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
+
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 flex-1 bg-[#0b0b0b]">
+              <div className="min-w-0 flex-1">
+                <Editor key={`main-${editorKey}`} options={getEditorOptions()} onChange={val => { if (val) setCurrentVal(val); }} beforeMount={handleEditorWillMount} height="100%" className="w-full" value={currentVal || ""} language={currentLanguage} theme="my-custom-theme" onMount={(e) => { editorRef.current = e; }} />
+              </div>
+              {splitFileIndex !== null && <SplitEditor files={files} splitFileIndex={splitFileIndex} editorKey={String(editorKey)} editorOptions={getEditorOptions()} onMount={(e) => { editor2Ref.current = e; }} />}
+            </div>
+
+            <div className="shrink-0 border-t border-paper/10 bg-[#070707]">
+              <div className="flex items-center justify-between border-b border-paper/10 px-4 py-2">
+                <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-paper/50">
+                  <span className="text-acid">❯</span> Terminal
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-paper/30">
+                  bash · /workspace
                 </span>
               </div>
-              <EditorOptions editorRef={editorRef} onAddFile={() => setShowNewFileModal(true)} onToggleSettings={() => setShowSettings(true)} onToggleShortcuts={() => setShowShortcuts(true)} />
-              <div className="flex-1 overflow-auto pb-4 [scrollbar-width:thin]">
-                <FileStructure removeFile={handleRemoveFile} selected={selectedFileIndex} onClick={handleFileClick} files={files} addFolder={handleAddFolder} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
-              </div>
-            </aside>
-
-            <section className="flex flex-col min-w-0">
-              <div className="flex h-12 items-center justify-between px-3 sm:px-4 py-3 border-b border-white/10 text-white">
-                <div className="flex items-center gap-2 min-w-0">
-                  <button className="md:hidden px-2 py-1.5 rounded-md border border-white/10 bg-white/5 hover:bg-white/10 text-xs" onClick={() => setSidebarOpenMobile(true)}>Files</button>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium flex items-center gap-2">
-                      {files[selectedFileIndex]?.name ?? "Editor"}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${saveStatus === "saved" ? "bg-emerald-500/20 text-emerald-400" : saveStatus === "saving" ? "bg-amber-500/20 text-amber-400" : "bg-white/10 text-white/60"}`}>
-                        {saveStatus === "saved" ? "Saved" : saveStatus === "saving" ? "Saving..." : "Editing"}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-white/60 truncate">{currentLanguage.toUpperCase()}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={handleSplitView} className={`px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1.5 transition ${splitFileIndex !== null ? "bg-white/20 text-white" : "bg-white/5 hover:bg-white/10 text-white/80 border border-white/10"}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><rect x={3} y={3} width={18} height={18} rx={2} /><line x1={12} y1={3} x2={12} y2={21} /></svg>
-                    Split
-                  </button>
-                  <button onClick={handleRun} className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition" title="Run code (Ctrl+Enter)">
-                    <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    Run
-                  </button>
-                </div>
-              </div>
-              <div className="h-10">
-                <HeadingTabs selectedFile={selectedFileIndex} files={files} onClick={handleFileClick} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
-              </div>
-
-              <div className="flex grow justify-end flex-col">
-                <div className="h-full bg-[#141414] flex">
-                  <div className="flex-1 min-w-0">
-                    <Editor key={`main-${editorKey}`} options={getEditorOptions()} onChange={val => { if (val) setCurrentVal(val); }} beforeMount={handleEditorWillMount} height="100%" className="w-full" value={currentVal || ""} language={currentLanguage} theme="my-custom-theme" onMount={(e) => { editorRef.current = e; }} />
-                  </div>
-                  {splitFileIndex !== null && <SplitEditor files={files} splitFileIndex={splitFileIndex} editorKey={String(editorKey)} editorOptions={getEditorOptions()} onMount={(e) => { editor2Ref.current = e; }} />}
-                </div>
-                <div className="border-t border-white/10 bg-black/35 backdrop-blur-xl">
-                  <div className="flex items-center gap-2 px-3 sm:px-4 py-2 text-white/80"><span className="text-xs">Terminal</span></div>
-                  <div className="h-56 sm:h-64 px-3 sm:px-4 pb-3">
-                    <div className="h-full p-2 w-full rounded-lg border border-white/10 bg-black/40"><XTerminal socket={socket} /></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {sidebarOpenMobile && (
-            <div className="md:hidden fixed inset-0 z-50">
-              <div className="absolute inset-0 bg-black/60" onClick={() => setSidebarOpenMobile(false)} />
-              <div className="absolute left-0 top-0 h-full w-[85vw] max-w-sm border-r border-white/10 bg-neutral-950/70 backdrop-blur-xl text-white">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                  <span className="text-sm text-white/80">Workspace</span>
-                  <button className="text-xs px-2 py-1 rounded-md border border-white/10 bg-white/5" onClick={() => setSidebarOpenMobile(false)}>Done</button>
-                </div>
-                <EditorOptions editorRef={editorRef} onAddFile={() => setShowNewFileModal(true)} onToggleSettings={() => setShowSettings(true)} onToggleShortcuts={() => setShowShortcuts(true)} />
-                <div className="h-[calc(100%-104px)] overflow-auto pb-4 [scrollbar-width:thin]">
-                  <FileStructure removeFile={handleRemoveFile} selected={selectedFileIndex} onClick={handleFileClick} files={files} addFolder={handleAddFolder} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
+              <div className="h-52 px-3 pb-3 pt-2 sm:h-60">
+                <div className="h-full w-full overflow-hidden border border-paper/10 bg-[#0b0b0b] p-2">
+                  <XTerminal socket={socket} />
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        </section>
       </div>
+
+      {/* ── Status bar ───────────────────────────────────────── */}
+      <footer className="flex h-6 shrink-0 items-center justify-between border-t border-paper/10 bg-ink px-3 font-mono text-[10px] uppercase tracking-wider text-paper/45 sm:text-[11px]">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-acid" : "animate-pulse bg-paper/40"}`} />
+            {connected ? "Connected" : "Connecting"}
+          </span>
+          <span className="hidden items-center gap-1 sm:flex">⎇ main</span>
+        </div>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <span className="truncate max-w-[40vw]">{activeFile?.name ?? "—"}</span>
+          <span
+            className={
+              saveStatus === "saved"
+                ? "text-acid"
+                : saveStatus === "saving"
+                ? "text-paper/70"
+                : "text-paper/50"
+            }
+          >
+            {saveStatus === "saved" ? "● Saved" : saveStatus === "saving" ? "◌ Saving" : "○ Editing"}
+          </span>
+          <span className="hidden sm:inline">{currentLanguage || "text"}</span>
+          <span className="hidden md:inline">UTF-8</span>
+        </div>
+      </footer>
+
+      {/* Mobile sidebar */}
+      {sidebarOpenMobile && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-ink/70 backdrop-blur-sm" onClick={() => setSidebarOpenMobile(false)} />
+          <div className="absolute left-0 top-0 flex h-full w-[85vw] max-w-sm flex-col border-r border-paper/10 bg-[#070707]">
+            <div className="flex items-center justify-between border-b border-paper/10 px-4 py-3">
+              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/60">Explorer</span>
+              <button className="border border-paper/15 bg-paper/5 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-paper/70 hover:border-paper/30" onClick={() => setSidebarOpenMobile(false)}>Done</button>
+            </div>
+            <EditorOptions editorRef={editorRef} onAddFile={() => setShowNewFileModal(true)} onToggleSettings={() => setShowSettings(true)} onToggleShortcuts={() => setShowShortcuts(true)} />
+            <div className="flex-1 overflow-auto pb-4 [scrollbar-width:thin]">
+              <FileStructure removeFile={handleRemoveFile} selected={selectedFileIndex} onClick={handleFileClick} files={files} addFolder={handleAddFolder} splitFileIndex={splitFileIndex} onSplitFileClick={handleSplitFileClick} />
+            </div>
+          </div>
+        </div>
+      )}
 
       <NewFileModal isOpen={showNewFileModal} fileName={newFileName} isCreating={isCreatingFile} onFileNameChange={setNewFileName} onCreate={handleAddFile} onClose={() => { setShowNewFileModal(false); setNewFileName(""); }} />
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} settings={settings} onSettingsChange={setSettings} />
