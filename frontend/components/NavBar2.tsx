@@ -43,32 +43,33 @@ export default function NavBar() {
     }, []);
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 md:px-12 py-6 bg-black/20 backdrop-blur-md border-b border-white/5">
-            <div className="text-2xl font-bold tracking-tighter bg-linear-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                Code Pilot
-            </div> 
-            <div className="flex items-center gap-8">
-                <div className="hidden md:flex gap-6 text-sm font-medium text-gray-400">
-                    <button className="hover:text-white transition-colors">Features</button> 
-                    <button className="hover:text-white transition-colors">Documentation</button> 
+        <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-5 sm:px-8 md:px-12 py-5 bg-[#050505]/70 backdrop-blur-md border-b border-[#ece9e1]/10">
+            <a href="/" className="font-display text-lg font-bold uppercase tracking-tight text-[#ece9e1]">
+                Code<span className="text-[#d8ff3e]">/</span>Pilot
+            </a>
+            <div className="flex items-center gap-6 sm:gap-8">
+                <div className="hidden md:flex gap-7 font-mono text-[11px] uppercase tracking-[0.2em] text-[#ece9e1]/45">
+                    <a href="#features" className="hover:text-[#d8ff3e] transition-colors">Features</a>
+                    <a href="#how-it-works" className="hover:text-[#d8ff3e] transition-colors">How it works</a>
+                    <a href="#faq" className="hover:text-[#d8ff3e] transition-colors">FAQ</a>
                 </div>
                 {hasToken ? (
                     <div className="flex items-center gap-3 relative" ref={menuRef}>
                         <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            whileHover={{ y: -1 }}
+                            whileTap={{ scale: 0.97 }}
                             type="button"
                             onClick={() => router.push("/dashboard")}
-                            className="bg-white text-black px-5 py-2 rounded-md text-sm hover:bg-gray-200 transition-colors"
+                            className="bg-[#d8ff3e] text-[#050505] px-5 py-2.5 font-mono text-xs uppercase tracking-wider hover:-translate-y-0.5 transition-transform"
                         >
                             Dashboard
                         </motion.button>
                         <button
                             onClick={() => setShowUserMenu(!showUserMenu)}
-                            className="p-2 rounded-md bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition"
+                            className="p-2 bg-[#ece9e1]/5 border border-[#ece9e1]/10 hover:border-[#ece9e1]/30 transition"
                         >
-                            <div className="w-6 h-6 rounded bg-white/20 flex items-center justify-center">
-                                <span className="text-white/60 text-xs font-semibold">{userEmail ? userEmail[0].toUpperCase() : ""}</span>
+                            <div className="w-6 h-6 bg-[#ece9e1]/15 flex items-center justify-center">
+                                <span className="text-[#ece9e1]/70 text-xs font-semibold">{userEmail ? userEmail[0].toUpperCase() : ""}</span>
                             </div>
                         </button>
                         <AnimatePresence>
@@ -78,10 +79,10 @@ export default function NavBar() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: 5 }}
                                     transition={{ duration: 0.15 }}
-                                    className="absolute right-0 top-full mt-2 bg-[#0f0f0f] border border-white/10 rounded-xl py-2 w-56 shadow-xl z-50"
+                                    className="absolute right-0 top-full mt-2 bg-[#0b0b0b] border border-[#ece9e1]/10 py-2 w-56 shadow-xl z-50"
                                 >
-                                    <div className="px-4 py-2 border-b border-white/5">
-                                        <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                                    <div className="px-4 py-2 border-b border-[#ece9e1]/5">
+                                        <p className="text-xs text-[#ece9e1]/40 truncate font-mono">{userEmail}</p>
                                     </div>
                                     <button
                                         onClick={() => {
@@ -89,7 +90,7 @@ export default function NavBar() {
                                             setHasToken(false);
                                             router.replace("/");
                                         }}
-                                        className="w-full px-4 py-2.5 text-left text-sm text-gray-400 hover:text-white hover:bg-white/5 transition flex items-center gap-2"
+                                        className="w-full px-4 py-2.5 text-left text-sm text-[#ece9e1]/50 hover:text-[#d8ff3e] hover:bg-[#ece9e1]/5 transition flex items-center gap-2"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -103,17 +104,17 @@ export default function NavBar() {
                         </AnimatePresence>
                     </div>
                 ) : (
-                    <motion.button 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                    <motion.button
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.97 }}
                         type="button"
                         onClick={() => router.push("/join")}
-                        className="bg-white text-black px-5 py-2 rounded-md text-sm  hover:bg-gray-200 transition-colors"
+                        className="bg-[#d8ff3e] text-[#050505] px-5 py-2.5 font-mono text-xs uppercase tracking-wider hover:-translate-y-0.5 transition-transform"
                     >
                         Get Started
                     </motion.button>
                 )}
-            </div> 
+            </div>
         </nav>
     )
 }
