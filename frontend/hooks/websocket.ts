@@ -18,20 +18,30 @@ export const useSocket = (projectId?: string) => {
       return;
     }
 
-    const wsUrl = `${WS_URL}?projectId=${projectId}`;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const wsUrl = `${WS_URL}?projectId=${encodeURIComponent(projectId)}${
+      token ? `&token=${encodeURIComponent(token)}` : ""
+    }`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
     setSocket(ws);
+    setConnected(false);
 
+    // Only mutate state if this socket is still the active one. Without this
+    // guard, a previous socket's late `onclose` (e.g. from React StrictMode's
+    // mount→unmount→remount in dev) would wipe the live socket and the
+    // workspace would silently fail to boot until a manual reload.
     ws.onopen = () => {
-      console.log("WebSocket connected");
-      setConnected(true);
+      if (wsRef.current === ws) setConnected(true);
     };
 
     ws.onclose = () => {
-      wsRef.current = null;
-      setSocket(null);
-      setConnected(false);
+      if (wsRef.current === ws) {
+        wsRef.current = null;
+        setSocket(null);
+        setConnected(false);
+      }
     };
 
     ws.onerror = () => {
@@ -39,12 +49,21 @@ export const useSocket = (projectId?: string) => {
     };
 
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      // Detach handlers before closing so this socket's async close event
+      // can't fire setState after a newer socket has taken over.
+      ws.onopen = null;
+      ws.onclose = null;
+      ws.onerror = null;
+      try {
+        ws.close();
+      } catch {
+        // ignore
       }
-      setSocket(null);
-      setConnected(false);
+      if (wsRef.current === ws) {
+        wsRef.current = null;
+        setSocket(null);
+        setConnected(false);
+      }
     };
   }, [projectId]);
 
