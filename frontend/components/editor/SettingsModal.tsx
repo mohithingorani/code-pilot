@@ -35,15 +35,15 @@ export default function SettingsModal({ isOpen, onClose, settings, onSettingsCha
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-white">Editor Settings</h2>
+    <div className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0b0b0b] border border-paper/10 rounded-lg w-full max-w-md overflow-hidden">
+        <div className="p-6 border-b border-paper/10 flex justify-between items-center">
+          <h2 className="font-display text-xl font-bold uppercase tracking-tight text-paper">Editor Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition"
+            className="p-2 hover:bg-paper/10 text-paper/60 hover:text-acid transition"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}>
+            <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path d="M18 6 6 18M6 6l12 12"/>
             </svg>
           </button>
@@ -83,17 +83,17 @@ export default function SettingsModal({ isOpen, onClose, settings, onSettingsCha
           />
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-white/80">Tab Size: {settings.tabSize} spaces</span>
+              <span className="text-paper/80 text-sm">Tab Size: {settings.tabSize} spaces</span>
             </div>
             <div className="flex gap-2">
               {[2, 4].map(size => (
                 <button
                   key={size}
                   onClick={() => updateSetting("tabSize", size)}
-                  className={`flex-1 py-2 rounded-lg text-sm transition ${
-                    settings.tabSize === size 
-                      ? "bg-white text-black" 
-                      : "bg-white/10 text-white/80 hover:bg-white/20"
+                  className={`flex-1 py-2 text-sm font-mono transition ${
+                    settings.tabSize === size
+                      ? "bg-acid text-ink"
+                      : "bg-paper/10 text-paper/80 hover:bg-paper/20"
                   }`}
                 >
                   {size}
@@ -110,12 +110,12 @@ export default function SettingsModal({ isOpen, onClose, settings, onSettingsCha
 function ToggleSetting({ label, value, onToggle }: { label: string; value: boolean; onToggle: () => void }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-white/80">{label}</span>
+      <span className="text-paper/80 text-sm">{label}</span>
       <button
         onClick={onToggle}
-        className={`w-12 h-6 rounded-full transition ${value ? "bg-emerald-500" : "bg-white/20"}`}
+        className={`w-12 h-6 rounded-full transition ${value ? "bg-acid" : "bg-paper/20"}`}
       >
-        <div className={`w-5 h-5 bg-white rounded-full transition transform ${value ? "translate-x-6" : "translate-x-0.5"}`} />
+        <div className={`w-5 h-5 rounded-full transition transform ${value ? "translate-x-6 bg-ink" : "translate-x-0.5 bg-paper"}`} />
       </button>
     </div>
   );
@@ -125,7 +125,7 @@ function SliderSetting({ label, value, min, max, onChange }: { label: string; va
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-white/80">{label}</span>
+        <span className="text-paper/80 text-sm">{label}</span>
       </div>
       <input
         type="range"
@@ -133,7 +133,7 @@ function SliderSetting({ label, value, min, max, onChange }: { label: string; va
         max={max}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
-        className="w-full accent-white"
+        className="w-full accent-[#d8ff3e]"
       />
     </div>
   );

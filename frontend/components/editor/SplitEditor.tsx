@@ -17,9 +17,10 @@ export default function SplitEditor({ files, splitFileIndex, editorKey, editorOp
   if (!splitFile) return null;
 
   return (
-    <div className="flex-1 min-w-0 border-l border-white/10">
-      <div className="h-8 flex items-center px-3 bg-black/30 border-b border-white/10">
-        <span className="text-xs text-white/60 truncate">{splitFile.name}</span>
+    <div className="flex-1 min-w-0 border-l border-paper/10">
+      <div className="h-8 flex items-center gap-2 px-3 bg-ink border-b border-paper/10">
+        <span className="h-1.5 w-1.5 rounded-full bg-acid/70" />
+        <span className="font-mono text-[11px] text-paper/55 truncate">{splitFile.name}</span>
       </div>
       <Editor
         key={`split-${editorKey}`}

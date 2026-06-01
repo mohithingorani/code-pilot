@@ -83,7 +83,7 @@ export default function FileStructure({
         <div key={fullPath}>
           <div
             onClick={() => toggleFolder(fullPath)}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm text-white/85 hover:bg-white/10"
+            className="flex items-center gap-2 px-2 py-1.5 cursor-pointer font-mono text-[13px] text-paper/80 hover:bg-paper/5"
             style={{ paddingLeft: `${depth * 16 + 8}px` }}
           >
             <Image
@@ -94,7 +94,7 @@ export default function FileStructure({
               className="shrink-0 opacity-90"
             />
             <span>{node.name}</span>
-            <span className="ml-auto text-white/40 text-xs">{isOpen ? "▼" : "▶"}</span>
+            <span className="ml-auto text-paper/35 text-[10px]">{isOpen ? "▼" : "▶"}</span>
           </div>
           {isOpen && node.children?.map((child) => renderNode(child, depth + 1, fullPath))}
         </div>
@@ -105,12 +105,12 @@ export default function FileStructure({
       <div
         key={fullPath}
         onClick={() => flatIndex >= 0 && onClick(flatIndex)}
-        className={`flex group items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-sm ${
+        className={`flex group items-center gap-2 px-2 py-1.5 cursor-pointer font-mono text-[13px] ${
           flatIndex === selected
-            ? "bg-white/10 border-l-2 border-sky-400/70 text-white"
+            ? "bg-paper/[0.06] border-l-2 border-acid text-paper"
             : flatIndex === splitFileIndex
-            ? "bg-blue-500/10 border-l-2 border-blue-400/70 text-blue-300"
-            : "border-l-2 border-transparent text-white/85 hover:bg-white/10"
+            ? "bg-paper/[0.03] border-l-2 border-acid/50 text-acid"
+            : "border-l-2 border-transparent text-paper/80 hover:bg-paper/5"
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
@@ -123,7 +123,7 @@ export default function FileStructure({
         />
         <span className="whitespace-nowrap flex-1 min-w-0">{node.name}</span>
         {splitFileIndex !== null && splitFileIndex !== undefined && flatIndex === splitFileIndex && (
-          <span className="text-[10px] bg-blue-500/30 px-1.5 py-0.5 rounded text-blue-300">Split</span>
+          <span className="text-[9px] uppercase tracking-wider bg-acid/15 px-1.5 py-0.5 text-acid">Split</span>
         )}
         <Image
           onClick={(e) => {
@@ -141,9 +141,9 @@ export default function FileStructure({
   };
 
   return (
-    <div className="px-3">
+    <div className="px-2 pt-3">
       <div className="flex items-center justify-between px-2 py-1.5">
-        <div className="font-semibold text-white/90 select-none">Workspace</div>
+        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/40 select-none">Explorer</div>
         {addFolder && (
           <button
             onClick={() => {
@@ -152,7 +152,7 @@ export default function FileStructure({
                 addFolder(name.trim());
               }
             }}
-            className="p-1 hover:bg-white/10 rounded text-white/60 hover:text-white transition"
+            className="p-1 hover:bg-paper/10 text-paper/50 hover:text-acid transition"
             title="Create folder"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">

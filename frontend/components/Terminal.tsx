@@ -31,8 +31,21 @@ export default function XTerminal({ socket }: { socket: WebSocket | null }) {
 
       term = new Terminal({
         cursorBlink: true,
-        fontSize: 14,
+        fontSize: 13,
         scrollback: 2000,
+        fontFamily: "'JetBrains Mono', ui-monospace, 'SF Mono', monospace",
+        letterSpacing: 0.3,
+        theme: {
+          background: "#0b0b0b",
+          foreground: "#ece9e1",
+          cursor: "#d8ff3e",
+          cursorAccent: "#0b0b0b",
+          selectionBackground: "#d8ff3e33",
+          black: "#0b0b0b",
+          brightBlack: "#5c5c54",
+          green: "#d8ff3e",
+          brightGreen: "#d8ff3e",
+        },
       });
       termRef.current = term;
 

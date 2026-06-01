@@ -13,34 +13,34 @@ export default function NewFileModal({ isOpen, fileName, isCreating, onFileNameC
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0A0A0A] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden">
-        <div className="p-6 border-b border-white/5">
-          <h2 className="text-xl font-semibold text-white">New File</h2>
-          <p className="text-gray-500 text-sm mt-1">Enter a file name with extension</p>
+    <div className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0b0b0b] border border-paper/10 rounded-lg w-full max-w-md overflow-hidden">
+        <div className="p-6 border-b border-paper/10">
+          <h2 className="font-display text-xl font-bold uppercase tracking-tight text-paper">New File</h2>
+          <p className="text-paper/40 font-mono text-xs mt-1.5">Enter a file name with extension</p>
         </div>
-        <div className="p-6 space-y-4">
+        <div className="p-6">
           <input
             type="text"
             placeholder="main.py, index.js, app.ts"
             value={fileName}
             onChange={(e) => onFileNameChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onCreate()}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition"
+            className="w-full bg-paper/5 border border-paper/15 rounded-md px-4 py-3 font-mono text-sm text-paper placeholder-paper/30 focus:outline-none focus:border-acid/60 transition"
             autoFocus
           />
         </div>
-        <div className="p-6 border-t border-white/5 flex gap-3">
+        <div className="p-6 border-t border-paper/10 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl border border-white/20 text-white hover:bg-white/5 transition font-medium"
+            className="flex-1 px-4 py-3 rounded-md border border-paper/20 text-paper/80 hover:bg-paper/5 transition font-mono text-xs uppercase tracking-wider"
           >
             Cancel
           </button>
           <button
             onClick={onCreate}
             disabled={!fileName.trim() || isCreating}
-            className="flex-1 px-4 py-3 rounded-xl bg-white text-black font-medium hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 rounded-md bg-acid text-ink font-mono text-xs uppercase tracking-wider font-medium hover:-translate-y-0.5 transition-transform disabled:opacity-40 disabled:cursor-not-allowed disabled:translate-y-0"
           >
             Create
           </button>
