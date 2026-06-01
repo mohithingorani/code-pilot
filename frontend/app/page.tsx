@@ -1,391 +1,779 @@
 "use client";
 
 import NavBar from "@/components/NavBar2";
-import { motion } from "framer-motion";
-import { useState } from "react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  AnimatePresence,
+} from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+const GITHUB_URL = "https://github.com/mohithingorani/code-pilot";
+const LINKEDIN_URL = "https://www.linkedin.com/in/mohithingorani/";
+
+const LANGUAGES = [
+  "Python",
+  "JavaScript",
+  "TypeScript",
+  "Java",
+  "C++",
+  "Markdown",
+];
+
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+const features = [
+  {
+    num: "01",
+    title: "Real-time sync",
+    desc: "Watch your team's cursors move as it happens. No refresh, no delays, no merge dread.",
+    tag: "collaboration",
+  },
+  {
+    num: "02",
+    title: "Isolated containers",
+    desc: "Every project runs in its own Docker sandbox. Real toolchains, zero blast radius.",
+    tag: "execution",
+  },
+  {
+    num: "03",
+    title: "Browser-native",
+    desc: "Open any project from any browser. Same setup everywhere, nothing to install.",
+    tag: "cloud",
+  },
+  {
+    num: "04",
+    title: "Built-in terminal",
+    desc: "Run npm, git, pip and friends without ever leaving the editor — it's a real shell.",
+    tag: "tooling",
+  },
+  {
+    num: "05",
+    title: "Instant sharing",
+    desc: "Hand someone a link and they're in your workspace. Collaborators join in a click.",
+    tag: "sharing",
+  },
+  {
+    num: "06",
+    title: "Always saved",
+    desc: "Files stream to durable storage as you type. Close the tab, lose nothing.",
+    tag: "persistence",
+  },
+];
+
+const steps = [
+  {
+    k: "01",
+    t: "Spin up a project",
+    d: "Pick a language. We seed a starter template and a fresh workspace in seconds.",
+  },
+  {
+    k: "02",
+    t: "Code in the browser",
+    d: "A full Monaco editor with a file tree, tabs and a live terminal — no local setup.",
+  },
+  {
+    k: "03",
+    t: "Run in a container",
+    d: "Your code executes inside an isolated Docker container, streamed straight to you.",
+  },
+];
 
 const faqData = [
   {
     question: "Is my code private?",
-    answer: "Yes. Your code is encrypted in transit and at rest. Only you and people you explicitly invite can access your projects."
-  },
-  {
-    question: "Can I work offline?",
-    answer: "Code Pilot requires an internet connection for real-time collaboration. However, your code is saved continuously so you never lose work."
+    answer:
+      "Yes. Your code is encrypted in transit and at rest. Only you and people you explicitly invite can access your projects.",
   },
   {
     question: "What languages are supported?",
-    answer: "We support JavaScript, TypeScript, Python, Java, C++, and Markdown. More languages are coming soon."
+    answer:
+      "Python, JavaScript, TypeScript, Java, C++, and Markdown today — each with a real toolchain inside its container. More are on the way.",
+  },
+  {
+    question: "Where does my code actually run?",
+    answer:
+      "Every project gets its own isolated Docker container on our infrastructure. You get a genuine shell, not a sandboxed fake.",
   },
   {
     question: "Do you train AI models on my code?",
-    answer: "No. We never use your code for AI training. Your intellectual property remains yours."
+    answer:
+      "No. We never use your code for training. Your intellectual property stays yours, full stop.",
   },
 ];
 
-export default function Home() {
-  const router = useRouter();
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+/* ------------------------------------------------------------------ */
+/* Primitives                                                          */
+/* ------------------------------------------------------------------ */
 
+function MaskLine({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
   return (
-    <div className="relative min-h-screen text-white selection:bg-white/20">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-[#050505]" />
-        <div className="absolute inset-0" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\' opacity=\'0.015\'/%3E%3C/svg%3E")' }} />
+    <span className={`block overflow-hidden ${className}`}>
+      <motion.span
+        className="block"
+        initial={{ y: "115%" }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.95, delay, ease: EASE }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+}
+
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-12%" }}
+      transition={{ duration: 0.8, delay, ease: EASE }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function Marquee({
+  items,
+  reverse = false,
+  duration = "34s",
+  className = "",
+}: {
+  items: React.ReactNode[];
+  reverse?: boolean;
+  duration?: string;
+  className?: string;
+}) {
+  const Row = ({ ariaHidden }: { ariaHidden?: boolean }) => (
+    <div
+      aria-hidden={ariaHidden}
+      className={`flex shrink-0 items-center ${
+        reverse ? "animate-marquee-reverse" : "animate-marquee"
+      }`}
+    >
+      {items.map((it, i) => (
+        <span key={i} className="flex items-center">
+          {it}
+        </span>
+      ))}
+    </div>
+  );
+  return (
+    <div className={`marquee-pause overflow-hidden ${className}`}>
+      <div
+        className="flex w-max"
+        style={{ ["--marquee-duration" as string]: duration }}
+      >
+        <Row />
+        <Row ariaHidden />
       </div>
-
-      <NavBar />
-
-      <main className="relative pt-24  px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center">
-
-        {/* Hero Section */}
-        <section className="relative z-10 py-12 md:py-20 flex flex-col items-center text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-5xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-4 sm:mb-6 leading-[0.95]"
-          >
-            <span className="bg-linear-to-b from-white to-gray-500 bg-clip-text text-transparent">
-              Code at the speed <br className="hidden sm:block" /> of thought.
-            </span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-base sm:text-lg md:text-xl text-white/50 mb-8 sm:mb-10 max-w-xl leading-relaxed px-4 sm:px-0"
-          >
-            Real-time collaborative IDE for teams who ship faster.
-          </motion.p>
-
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="button"
-            onClick={() => {
-              const token = localStorage.getItem("token");
-              router.push(token ? "/dashboard" : "/join");
-            }}
-            className="w-full sm:w-auto px-8 py-3.5 bg-white text-black rounded-lg text-base font-medium hover:bg-gray-100 transition-colors"
-          >
-            Start Coding Now
-          </motion.button>
-        </section>
-
-        {/* Preview Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="w-full py-12 sm:py-16 border-t border-white/5"
-        >
-          <div className="max-w-3xl mx-auto px-2 sm:px-0 overflow-x-hidden">
-            <PreviewSection />
-          </div>
-        </motion.section>
-
-        {/* Features Grid */}
-        <section id="features" className="w-full py-16 border-t border-white/5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {[
-              {
-                num: "01",
-                title: "Real-time Sync",
-                desc: "See your team's cursors move as it happens. No refresh, no delays.",
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-                  </svg>
-                )
-              },
-              {
-                num: "02",
-                title: "Contextual AI",
-                desc: "Code completion that understands your project, not just the file you're in.",
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.335.041-.67.072-1.005.072m0 0h.008m.008 0c-.335.041-.67.072-1.005.072m0 0h.008m.008 0c-.335.041-.67.072-1.005.072m0 0h.008m5.667-3.025c-.335.041-.67.072-1.005.072m0 0h.008m.008 0c-.335.041-.67.072-1.005.072m0 0h.008m5.667-3.025c-.335.041-.67.072-1.005.072m-9.75 9.25c-.335.041-.67.072-1.005.072m0 0h.008m.008 0c-.335.041-.67.072-1.005.072m0 0h.008m.008 0c-.335.041-.67.072-1.005.072M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1.001A3.75 3.75 0 0012 18z" />
-                  </svg>
-                )
-              },
-              {
-                num: "03",
-                title: "Cloud Dev Environments",
-                desc: "Run your project from any browser. Same setup, everywhere.",
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
-                  </svg>
-                )
-              },
-              {
-                num: "04",
-                title: "Instant Sharing",
-                desc: "Share your workspace with a link. Collaborators join instantly.",
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
-                  </svg>
-                )
-              },
-              {
-                num: "05",
-                title: "Built-in Terminal",
-                desc: "Run npm, git, and all your favorite tools without leaving the editor.",
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
-                  </svg>
-                )
-              },
-              {
-                num: "06",
-                title: "Version History",
-                desc: "Every change is saved. Browse history, restore previous versions.",
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )
-              }
-            ].map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.08 }}
-                whileHover={{ y: -2 }}
-                className="group relative p-4 md:p-6 rounded-2xl border border-white/10 hover:border-white/20 transition-all cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono text-white/30">{feature.num}</span>
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/40 group-hover:text-white/70 group-hover:bg-white/10 transition-all">
-                    {feature.icon}
-                  </div>
-                </div>
-                <h3 className="text-base font-medium mb-2 text-white/80 group-hover:text-white/90 transition-colors">{feature.title}</h3>
-                <p className="text-sm text-white/40 leading-relaxed group-hover:text-white/50 transition-colors">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section className="w-full py-12 sm:py-16 border-t border-white/5">
-          <div className="max-w-2xl mx-auto px-4 sm:px-0">
-            <h2 className="text-lg sm:text-xl font-medium text-white/80 mb-6 sm:mb-8 text-center">Frequently asked questions</h2>
-            <div className="space-y-3">
-              {faqData.map((faq, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.3, delay: i * 0.05 }}
-                  className="border border-white/10 rounded-xl overflow-hidden"
-                >
-                  <button
-                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                    className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
-                  >
-                    <span className="text-sm text-white/70 pr-2">{faq.question}</span>
-                    <motion.svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width={16}
-                      height={16}
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      animate={{ rotate: openFaq === i ? 180 : 0 }}
-                      className="text-white/40 shrink-0"
-                    >
-                      <path d="m6 9 6 6 6-6" />
-                    </motion.svg>
-                  </button>
-                  <motion.div
-                    initial={false}
-                    animate={{ height: openFaq === i ? "auto" : 0, opacity: openFaq === i ? 1 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="px-5 pt-3 pb-4 text-sm text-white/40">{faq.answer}</p>
-                  </motion.div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-      
-
-      </main>
-
-      <footer className="border-t border-white/10 bg-black mt-16 sm:mt-20 relative z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 py-10 md:py-16">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="16 18 22 12 16 6" />
-                  <polyline points="8 6 2 12 8 18" />
-                </svg>
-              </div>
-              <span className="text-white font-medium">Code Pilot</span>
-            </div>
-            <div className="flex items-center gap-5">
-              <a href="/join" className="text-white/40 hover:text-white transition-colors text-sm">Join</a>
-              <a href="/dashboard" className="text-white/40 hover:text-white transition-colors text-sm">Dashboard</a>
-              <a
-                href="https://github.com/mohithingorani/code-pilot"
-                target="_blank"
-                rel="noreferrer"
-                className="w-8 h-8 rounded-lg border border-white/5 flex items-center justify-center text-white/40 hover:text-white hover:border-white/20 transition-all"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                </svg>
-              </a>
-              <a
-                href="https://www.linkedin.com/in/mohithingorani/"
-                target="_blank"
-                rel="noreferrer"
-                className="w-8 h-8 rounded-lg border border-white/5 flex items-center justify-center text-white/40 hover:text-white hover:border-white/20 transition-all"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-
-          <div className="pt-6 mt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-white/30 text-sm">
-              &copy; 2026 Code Pilot Inc. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
 
-function PreviewSection() {
-  const [activeTab, setActiveTab] = useState<"editor" | "terminal">("editor");
+function Typewriter({ phrases }: { phrases: string[] }) {
+  const [out, setOut] = useState("");
+  const [i, setI] = useState(0);
+  const [del, setDel] = useState(false);
 
-  const editorLines = [
-    { num: 1, code: '<span class="text-white/30">import</span> { useState } <span class="text-white/30">from</span> <span class="text-white/40">"react"</span>' },
-    { num: 2, code: '' },
-    { num: 3, code: '<span class="text-white/30">export default function</span> <span class="text-white/50">Home</span>() {' },
-    { num: 4, code: '  <span class="text-white/30">const</span> [count, setCount] = <span class="text-white/30">useState</span>(<span class="text-white/30">0</span>)' },
-    { num: 5, code: '' },
-    { num: 6, code: '  <span class="text-white/30">return</span> (' },
-    { num: 7, code: '    <span class="text-white/30">&#60;div></span>' },
-    { num: 8, code: '      <span class="text-white/30">&#60;h1></span>Count: {count}<span class="text-white/30">&#60;/h1></span>' },
-    { num: 9, code: '      <span class="text-white/30">&#60;button</span> <span class="text-white/40">onClick</span>={() => setCount(c => c + <span class="text-white/30">1</span>)}>' },
-    { num: 10, code: '        Increment' },
-    { num: 11, code: '      <span class="text-white/30">&#60;/button></span>' },
-    { num: 12, code: '    <span class="text-white/30">&#60;/div></span>' },
-    { num: 13, code: '  )' },
-    { num: 14, code: '}' },
+  useEffect(() => {
+    const full = phrases[i % phrases.length];
+    if (!del && out === full) {
+      const t = setTimeout(() => setDel(true), 1600);
+      return () => clearTimeout(t);
+    }
+    if (del && out === "") {
+      setDel(false);
+      setI((v) => v + 1);
+      return;
+    }
+    const t = setTimeout(
+      () => {
+        setOut((cur) =>
+          del ? cur.slice(0, -1) : full.slice(0, cur.length + 1)
+        );
+      },
+      del ? 35 : 75
+    );
+    return () => clearTimeout(t);
+  }, [out, del, i, phrases]);
+
+  return (
+    <span>
+      {out}
+      <span className="caret ml-0.5 inline-block h-[1em] w-[0.55ch] translate-y-[0.12em] bg-acid" />
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Sections                                                            */
+/* ------------------------------------------------------------------ */
+
+function Hero() {
+  const router = useRouter();
+  const start = () => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    router.push(token ? "/dashboard" : "/join");
+  };
+
+  return (
+    <section className="relative flex min-h-screen flex-col px-5 pt-28 sm:px-8 md:px-12">
+      {/* meta row */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.8 }}
+        className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.25em] text-paper/40"
+      >
+        <span className="flex items-center gap-2">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-acid" />
+          Browser-native IDE
+        </span>
+        <span className="hidden sm:block">Est. 2026 — v1.0</span>
+      </motion.div>
+
+      {/* headline */}
+      <div className="flex flex-1 flex-col justify-center py-10">
+        <h1 className="font-display text-[clamp(2.7rem,12.5vw,12rem)] font-bold uppercase leading-[0.82] tracking-[-0.035em]">
+          <MaskLine delay={0.05}>Code at the</MaskLine>
+          <MaskLine delay={0.13}>speed of</MaskLine>
+          <MaskLine delay={0.21} className="flex items-baseline">
+            <span className="text-acid">thought</span>
+            <span className="text-stroke">.</span>
+          </MaskLine>
+        </h1>
+      </div>
+
+      {/* bottom row */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.8, ease: EASE }}
+        className="flex flex-col gap-8 border-t border-paper/10 py-7 md:flex-row md:items-end md:justify-between"
+      >
+        <div className="max-w-md">
+          <div className="mb-4 font-mono text-[13px] text-paper/45">
+            <span className="text-acid">~/code-pilot</span>{" "}
+            <span className="text-paper/30">❯</span>{" "}
+            <Typewriter
+              phrases={[
+                "npm run dev",
+                "python main.py",
+                "g++ main.cpp -o app",
+                "git push origin main",
+              ]}
+            />
+          </div>
+          <p className="text-sm leading-relaxed text-paper/55 sm:text-base">
+            A real-time collaborative IDE that runs your code in isolated
+            containers. Open a browser, start shipping.
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            onClick={start}
+            className="group flex items-center gap-3 bg-acid px-7 py-4 font-mono text-sm font-medium uppercase tracking-wider text-ink transition-transform hover:-translate-y-0.5"
+          >
+            Start coding
+            <span className="transition-transform group-hover:translate-x-1">
+              →
+            </span>
+          </button>
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 border border-paper/20 px-6 py-4 font-mono text-sm uppercase tracking-wider text-paper/70 transition-colors hover:border-paper/50 hover:text-paper"
+          >
+            ★ GitHub
+          </a>
+        </div>
+      </motion.div>
+
+      {/* language marquee */}
+      <Marquee
+        className="border-y border-paper/10 py-4"
+        duration="40s"
+        items={[...LANGUAGES, "+ more"].flatMap((l, i) => [
+          <span
+            key={`l-${i}`}
+            className="px-6 font-display text-2xl font-medium text-paper/70 sm:text-3xl"
+          >
+            {l}
+          </span>,
+          <span key={`s-${i}`} className="text-acid">
+            ✦
+          </span>,
+        ])}
+      />
+    </section>
+  );
+}
+
+function Divider() {
+  const word = (k: string) => (
+    <span className="px-8 font-display text-[clamp(2rem,7vw,5.5rem)] font-bold uppercase leading-none text-ink">
+      {k}
+    </span>
+  );
+  const star = <span className="text-2xl text-ink/40">✺</span>;
+  return (
+    <div className="bg-acid py-5">
+      <Marquee
+        duration="26s"
+        items={[
+          word("Zero setup"),
+          star,
+          word("Real-time"),
+          star,
+          word("Containers"),
+          star,
+          word("Ship faster"),
+          star,
+        ]}
+      />
+    </div>
+  );
+}
+
+function Showcase() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const rotate = useTransform(scrollYProgress, [0, 0.5], [16, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.5], [0.88, 1]);
+  const y = useTransform(scrollYProgress, [0, 0.5], [80, 0]);
+
+  const code: { n: number; t: React.ReactNode }[] = [
+    {
+      n: 1,
+      t: (
+        <>
+          <span className="text-paper/35">import</span> {"{ useState }"}{" "}
+          <span className="text-paper/35">from</span>{" "}
+          <span className="text-acid">"react"</span>
+        </>
+      ),
+    },
+    { n: 2, t: <span /> },
+    {
+      n: 3,
+      t: (
+        <>
+          <span className="text-paper/35">export default function</span>{" "}
+          <span className="text-paper/90">Editor</span>() {"{"}
+        </>
+      ),
+    },
+    {
+      n: 4,
+      t: (
+        <>
+          {"  "}
+          <span className="text-paper/35">const</span> [ready, setReady] ={" "}
+          <span className="text-paper/35">useState</span>(
+          <span className="text-acid">false</span>)
+        </>
+      ),
+    },
+    {
+      n: 5,
+      t: (
+        <>
+          {"  "}
+          <span className="text-paper/35">return</span>{" "}
+          <span className="text-paper/55">{"<Workspace ready={ready} />"}</span>
+        </>
+      ),
+    },
+    { n: 6, t: <>{"}"}</> },
   ];
 
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-1 mb-6">
-        <button
-          onClick={() => setActiveTab("editor")}
-          className="relative px-4 py-2 text-xs font-mono transition-colors"
-        >
-          <span className={activeTab === "editor" ? "text-white/50" : "text-white/20"}>editor</span>
-          {activeTab === "editor" && (
-            <motion.div
-              layoutId="activeTab"
-              className="absolute bottom-0 left-4 right-4 h-px bg-white/20"
-            />
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("terminal")}
-          className="relative px-4 py-2 text-xs font-mono transition-colors"
-        >
-          <span className={activeTab === "terminal" ? "text-white/50" : "text-white/20"}>terminal</span>
-          {activeTab === "terminal" && (
-            <motion.div
-              layoutId="activeTab"
-              className="absolute bottom-0 left-4 right-4 h-px bg-white/20"
-            />
-          )}
-        </button>
-      </div>
+    <section ref={ref} className="relative px-5 py-24 sm:px-8 md:px-12">
+      <Reveal className="mb-10 flex items-end justify-between">
+        <h2 className="font-display text-[clamp(1.8rem,5vw,3.5rem)] font-bold uppercase leading-[0.9] tracking-tight">
+          Your whole
+          <br />
+          dev box, <span className="text-stroke-acid">on a tab</span>
+        </h2>
+        <span className="hidden font-mono text-xs uppercase tracking-[0.3em] text-paper/40 sm:block">
+          (live preview)
+        </span>
+      </Reveal>
 
-      <div className="min-h-[280px]">
-        {activeTab === "editor" ? (
-          <WindowFrame title="app/page.tsx">
-            <div className="flex font-mono text-sm">
-              <div className="flex flex-col pr-4 text-white/10 select-none">
-                {editorLines.map((line) => (
-                  <span key={line.num}>{line.num}</span>
-                ))}
-              </div>
-              <div
-                className="text-white/70 leading-6"
-                dangerouslySetInnerHTML={{ __html: editorLines.map((l) => l.code).join("<br/>") }}
-              />
-              <span className="inline-block w-2 bg-white/50 h-4 ml-0.5 align-middle" />
+      <div style={{ perspective: 1400 }}>
+        <motion.div
+          style={{ rotateX: rotate, scale, y }}
+          className="overflow-hidden border border-paper/15 bg-[#0b0b0b] shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]"
+        >
+          {/* title bar */}
+          <div className="flex items-center gap-4 border-b border-paper/10 px-4 py-3">
+            <div className="flex gap-1.5">
+              <span className="h-3 w-3 rounded-full bg-paper/20" />
+              <span className="h-3 w-3 rounded-full bg-paper/20" />
+              <span className="h-3 w-3 rounded-full bg-acid" />
             </div>
-          </WindowFrame>
-        ) : (
-          <WindowFrame title="Terminal">
-            <div className="font-mono text-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-white/40">~/code-pilot</span>
-                <span className="text-white/20">git:main</span>
-                <span className="text-white/20">❯</span>
+            <span className="font-mono text-xs text-paper/40">
+              editor.tsx — code-pilot
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-[180px_1fr]">
+            {/* file tree */}
+            <div className="hidden flex-col gap-1 border-r border-paper/10 p-4 font-mono text-xs text-paper/40 md:flex">
+              <span className="text-paper/30">EXPLORER</span>
+              <span className="mt-2 text-paper/55">▾ src</span>
+              <span className="pl-3 text-acid">editor.tsx</span>
+              <span className="pl-3">workspace.tsx</span>
+              <span className="pl-3">terminal.tsx</span>
+              <span className="mt-1 text-paper/55">▸ public</span>
+              <span className="text-paper/55">package.json</span>
+            </div>
+
+            {/* code */}
+            <div>
+              <div className="flex font-mono text-[13px] leading-7 sm:text-sm">
+                <div className="select-none border-r border-paper/5 px-4 py-5 text-right text-paper/20">
+                  {code.map((l) => (
+                    <div key={l.n}>{l.n}</div>
+                  ))}
+                </div>
+                <div className="overflow-x-auto px-5 py-5 text-paper/80">
+                  {code.map((l) => (
+                    <div key={l.n} className="whitespace-pre">
+                      {l.t}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="text-white/60 mb-1">
-                $ npm run dev
-              </div>
-              <div className="text-white/30 mb-3">
-                <span className="text-white/20">→</span> Running on localhost:3000
-              </div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-white/40">~/code-pilot</span>
-                <span className="text-white/20">❯</span>
-                <span className="inline-block w-2 h-4 bg-white/40 animate-pulse ml-1" />
+              {/* terminal strip */}
+              <div className="border-t border-paper/10 px-5 py-3 font-mono text-xs">
+                <span className="text-paper/35">~/code-pilot ❯</span>{" "}
+                <span className="text-paper/70">npm run dev</span>
+                <div className="text-acid/80">
+                  → ready on localhost:3000{" "}
+                  <span className="caret inline-block h-3 w-1.5 translate-y-0.5 bg-acid/70" />
+                </div>
               </div>
             </div>
-          </WindowFrame>
-        )}
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
 
-function WindowFrame({ title, children }: { title: string; children: React.ReactNode }) {
+function FeatureList() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="rounded-xl border border-white/5 overflow-hidden bg-black/30 shadow-[0_0_60px_rgba(255,255,255,0.02)]"
-    >
-      <div className="px-3 sm:px-4 py-2 border-b border-white/5">
-        <span className="text-xs text-white/30 font-mono">{title}</span>
+    <section id="features" className="px-5 sm:px-8 md:px-12">
+      <Reveal className="flex items-baseline justify-between border-b border-paper/15 pb-6">
+        <h2 className="font-display text-[clamp(2.2rem,8vw,7rem)] font-bold uppercase leading-[0.85] tracking-[-0.03em]">
+          What you get
+        </h2>
+        <span className="font-mono text-xs uppercase tracking-[0.3em] text-paper/40">
+          (006)
+        </span>
+      </Reveal>
+
+      <div>
+        {features.map((f, i) => (
+          <Reveal key={f.num} delay={(i % 2) * 0.06}>
+            <div className="group relative grid grid-cols-[auto_1fr] items-center gap-5 border-b border-paper/10 py-7 transition-colors duration-300 hover:bg-acid sm:grid-cols-[80px_1fr_auto] sm:gap-8 sm:py-9 md:px-4">
+              <span className="font-mono text-sm text-paper/30 transition-colors group-hover:text-ink/50">
+                {f.num}
+              </span>
+              <div className="min-w-0">
+                <h3 className="font-display text-2xl font-medium uppercase tracking-tight transition-colors group-hover:text-ink sm:text-4xl">
+                  {f.title}
+                </h3>
+                <p className="mt-1 max-w-xl text-sm text-paper/45 transition-colors group-hover:text-ink/70 sm:mt-2">
+                  {f.desc}
+                </p>
+              </div>
+              <div className="col-span-2 flex items-center gap-4 sm:col-span-1 sm:justify-end">
+                <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-paper/30 transition-colors group-hover:text-ink/50">
+                  {f.tag}
+                </span>
+                <span className="text-2xl text-paper/30 transition-all duration-300 group-hover:translate-x-1 group-hover:text-ink">
+                  →
+                </span>
+              </div>
+            </div>
+          </Reveal>
+        ))}
       </div>
-      <div className="p-3 sm:p-4 overflow-x-auto">
-        {children}
+    </section>
+  );
+}
+
+function HowItWorks() {
+  return (
+    <section id="how-it-works" className="px-5 py-24 sm:px-8 md:px-12">
+      <Reveal>
+        <span className="font-mono text-xs uppercase tracking-[0.3em] text-paper/40">
+          (02) — How it works
+        </span>
+        <h2 className="mt-4 max-w-3xl font-display text-[clamp(1.9rem,6vw,4.5rem)] font-bold uppercase leading-[0.9] tracking-tight">
+          Idea to running code in three moves
+        </h2>
+      </Reveal>
+
+      <div className="mt-14 grid gap-px overflow-hidden border border-paper/10 sm:grid-cols-3">
+        {steps.map((s, i) => (
+          <Reveal
+            key={s.k}
+            delay={i * 0.1}
+            className="group bg-ink p-7 outline outline-1 outline-paper/10 transition-colors hover:bg-paper/[0.03] sm:p-9"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-display text-5xl font-bold text-stroke sm:text-7xl">
+                {s.k}
+              </span>
+              <span className="text-acid transition-transform group-hover:translate-x-1">
+                →
+              </span>
+            </div>
+            <h3 className="mt-8 font-display text-xl font-medium uppercase tracking-tight sm:text-2xl">
+              {s.t}
+            </h3>
+            <p className="mt-3 text-sm leading-relaxed text-paper/45">{s.d}</p>
+          </Reveal>
+        ))}
       </div>
-    </motion.div>
+    </section>
+  );
+}
+
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section id="faq" className="px-5 py-12 sm:px-8 md:px-12">
+      <Reveal className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
+        <div>
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-paper/40">
+            (03) — FAQ
+          </span>
+          <h2 className="mt-4 font-display text-[clamp(2rem,6vw,4rem)] font-bold uppercase leading-[0.88] tracking-tight">
+            Questions,
+            <br />
+            answered
+          </h2>
+        </div>
+
+        <div>
+          {faqData.map((f, i) => {
+            const isOpen = open === i;
+            return (
+              <div
+                key={i}
+                className={`border-t border-paper/10 ${
+                  i === faqData.length - 1 ? "border-b" : ""
+                }`}
+              >
+                <button
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="flex w-full items-center justify-between gap-4 py-6 text-left"
+                >
+                  <span
+                    className={`font-display text-lg font-medium uppercase tracking-tight transition-colors sm:text-2xl ${
+                      isOpen ? "text-acid" : "text-paper/80"
+                    }`}
+                  >
+                    {f.question}
+                  </span>
+                  <span
+                    className={`shrink-0 font-mono text-xl transition-transform ${
+                      isOpen ? "rotate-45 text-acid" : "text-paper/40"
+                    }`}
+                  >
+                    +
+                  </span>
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: EASE }}
+                      className="overflow-hidden"
+                    >
+                      <p className="max-w-xl pb-6 text-sm leading-relaxed text-paper/50 sm:text-base">
+                        {f.answer}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+function CtaBand() {
+  const router = useRouter();
+  const start = () => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    router.push(token ? "/dashboard" : "/join");
+  };
+  return (
+    <section className="px-5 py-20 sm:px-8 md:px-12">
+      <Reveal>
+        <button
+          onClick={start}
+          className="group block w-full border border-paper/15 bg-acid py-16 text-center transition-colors sm:py-24"
+        >
+          <span className="font-mono text-xs uppercase tracking-[0.3em] text-ink/60">
+            No installs · No config
+          </span>
+          <span className="mt-4 flex items-center justify-center gap-4 font-display text-[clamp(2.5rem,10vw,9rem)] font-bold uppercase leading-none tracking-[-0.03em] text-ink">
+            Start coding
+            <span className="transition-transform duration-300 group-hover:translate-x-3">
+              →
+            </span>
+          </span>
+        </button>
+      </Reveal>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="relative overflow-hidden border-t border-paper/10 px-5 pt-16 sm:px-8 md:px-12">
+      <div className="flex flex-col justify-between gap-8 md:flex-row md:items-start">
+        <div>
+          <div className="font-display text-2xl font-bold uppercase tracking-tight">
+            Code Pilot
+          </div>
+          <p className="mt-2 max-w-xs text-sm text-paper/40">
+            A real-time, browser-native IDE for people who'd rather ship than
+            configure.
+          </p>
+        </div>
+        <div className="flex gap-12 font-mono text-sm">
+          <div className="flex flex-col gap-3">
+            <span className="text-paper/30 uppercase tracking-[0.2em] text-[11px]">
+              Product
+            </span>
+            <a href="#features" className="text-paper/60 hover:text-acid">
+              Features
+            </a>
+            <a href="#how-it-works" className="text-paper/60 hover:text-acid">
+              How it works
+            </a>
+            <a href="#faq" className="text-paper/60 hover:text-acid">
+              FAQ
+            </a>
+          </div>
+          <div className="flex flex-col gap-3">
+            <span className="text-paper/30 uppercase tracking-[0.2em] text-[11px]">
+              App
+            </span>
+            <a href="/join" className="text-paper/60 hover:text-acid">
+              Join
+            </a>
+            <a href="/dashboard" className="text-paper/60 hover:text-acid">
+              Dashboard
+            </a>
+          </div>
+          <div className="flex flex-col gap-3">
+            <span className="text-paper/30 uppercase tracking-[0.2em] text-[11px]">
+              Social
+            </span>
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-paper/60 hover:text-acid"
+            >
+              GitHub
+            </a>
+            <a
+              href={LINKEDIN_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="text-paper/60 hover:text-acid"
+            >
+              LinkedIn
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* giant wordmark */}
+      <div className="pointer-events-none mt-10 select-none">
+        <h2 className="font-display text-[clamp(3.5rem,22vw,20rem)] font-bold uppercase leading-[0.78] tracking-[-0.04em] text-stroke">
+          Code Pilot
+        </h2>
+      </div>
+
+      <div className="flex flex-col items-center justify-between gap-2 border-t border-paper/10 py-6 font-mono text-xs text-paper/30 sm:flex-row">
+        <span>© 2026 Code Pilot Inc.</span>
+        <span>Built for the browser ✦</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
+
+export default function Home() {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 30,
+    mass: 0.3,
+  });
+
+  return (
+    <div className="relative min-h-screen overflow-x-hidden bg-ink text-paper">
+      <motion.div
+        style={{ scaleX }}
+        className="fixed left-0 top-0 z-[60] h-0.5 w-full origin-left bg-acid"
+      />
+      <NavBar />
+      <Hero />
+      <Divider />
+      <Showcase />
+      <FeatureList />
+      <HowItWorks />
+      <Faq />
+      <CtaBand />
+      <Footer />
+    </div>
   );
 }
