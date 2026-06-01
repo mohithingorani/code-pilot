@@ -1,0 +1,160 @@
+<mxfile host="app.diagrams.net" modified="2026-05-12T00:00:00.000Z" agent="CodePilot" version="22.1.0" type="device">
+  <diagram name="Terminal Execution Flow" id="terminal-flow-v2">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Background -->
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0F172A;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1600" height="900" as="geometry"/>
+        </mxCell>
+
+        <!-- Title -->
+        <mxCell id="title" value="Terminal Execution Flow" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#F8FAFC;fontStyle=bold;fontSize=22;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="500" y="30" width="600" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 1 -->
+        <mxCell id="s1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#3B82F6;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="130" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s1-text" value="User opens&#xa;Editor Page" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#334155;fontColor=#CBD5E1;align=left;verticalAlign=middle;fontSize=13;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="110" y="130" width="160" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 2 -->
+        <mxCell id="s2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#3B82F6;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="210" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s2-text" value="WebSocket connects&#xa;&#xa;ws://host:8080?projectId={id}&#xa;&#xa;Frontend sends init message" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#334155;fontColor=#CBD5E1;align=left;verticalAlign=middle;fontSize=12;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="110" y="195" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 3 -->
+        <mxCell id="s3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#8B5CF6;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="320" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3-text" value="RepleManager.init()&#xa;&#xa;- mkdir /tmp/codepilot/{projectId}&#xa;- restoreProject() from S3/R2&#xa;- Copy language template" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#8B5CF6;fontColor=#C4B5FD;align=left;verticalAlign=middle;fontSize=12;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="110" y="295" width="280" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 4 -->
+        <mxCell id="s4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EF4444;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="420" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s4-text" value="startContainer()&#xa;&#xa;node-pty spawns:&#xa;&#xa;docker run -it --rm &#xa;  -v /tmp/codepilot/{id}:/workspace&#xa;  -w /workspace&#xa;  codepilot bash" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#EF4444;fontColor=#FCA5A5;align=left;verticalAlign=middle;fontSize=12;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="110" y="400" width="320" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Decision Diamond -->
+        <mxCell id="s5" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#F59E0B;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="545" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="decision" value="Docker image&#xa;&#xa;codepilot&#xa;&#xa;found?" style="rhombus;rounded=1;whiteSpace=wrap;html=1;fillColor=#F59E0B;strokeColor=#D97706;fontColor=#FFFFFF;align=center;verticalAlign=middle;fontSize=13;fontStyle=bold;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="260" y="520" width="160" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- YES Branch -->
+        <mxCell id="yes-label" value="YES" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#10B981;fontStyle=bold;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="290" y="510" width="50" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="s6" value="6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#10B981;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="475" y="530" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s6-text" value="Terminal ready&#xa;&#xa;xterm.js renders&#xa;container output&#xa;&#xa;User clicks Run&#xa;socket.send(cmd)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#064E3B;strokeColor=#10B981;fontColor=#6EE7B7;align=left;verticalAlign=middle;fontSize=12;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="530" y="505" width="220" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- NO Branch -->
+        <mxCell id="no-label" value="NO" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#EF4444;fontStyle=bold;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="315" y="615" width="50" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="s7" value="7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EF4444;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="680" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s7-text" value="Docker error&#xa;&#xa;docker: pull access denied&#xa;for codepilot, repository&#xa;does not exist or may&#xa;require docker login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7F1D1D;strokeColor=#EF4444;fontColor=#FCA5A5;align=left;verticalAlign=middle;fontSize=12;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="110" y="660" width="240" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="s8" value="8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EF4444;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="55" y="780" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s8-text" value="init() catches error&#xa;&#xa;Calls this.close()&#xa;&#xa;close(): shell.kill()&#xa;         user.close() (WS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7F1D1D;strokeColor=#EF4444;fontColor=#FCA5A5;align=left;verticalAlign=middle;fontSize=12;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="110" y="760" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="s9" value="9" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EF4444;strokeColor=none;fontColor=#FFFFFF;fontStyle=bold;fontSize=16;fontFamily=Helvetica Neue;align=center;" vertex="1" parent="1">
+          <mxGeometry x="560" y="680" width="36" height="36" as="geometry"/>
+        </mxCell>
+        <mxCell id="s9-text" value="Frontend error&#xa;&#xa;WebSocket is already&#xa;in CLOSING or CLOSED state" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7F1D1D;strokeColor=#EF4444;fontColor=#FCA5A5;align=center;verticalAlign=middle;fontSize=12;fontFamily=Helvetica Neue;" vertex="1" parent="1">
+          <mxGeometry x="615" y="660" width="220" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Arrows -->
+        <mxCell id="arrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="s1-text" target="s2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="200" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="s2-text" target="s3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="290" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="s3-text" target="s4">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="395" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#475569;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="s4-text" target="decision">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="450" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- YES Arrow -->
+        <mxCell id="yes-arrow" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#10B981;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="decision" target="s6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="420" y="575" as="sourcePoint"/>
+            <mxPoint x="475" y="548" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- NO Arrow -->
+        <mxCell id="no-arrow" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EF4444;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="decision" target="s7-text">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="630" as="sourcePoint"/>
+            <mxPoint x="110" y="705" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EF4444;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="s7-text" target="s8">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="800" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="arrow8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#EF4444;strokeWidth=2;endArrow=classic;endFill=1;" edge="1" parent="1" source="s8-text" target="s9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="600" y="800" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- FIX Box -->
+        <mxCell id="fix-label" value="FIX" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#F59E0B;fontStyle=bold;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="900" y="100" width="40" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="fix-box" value="On production server:&#xa;&#xa;cd backend&#xdocker build -t codepilot ." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=#10B981;fontColor=#6EE7B7;align=left;verticalAlign=middle;fontSize=13;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="900" y="120" width="320" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Step 5 detail box -->
+        <mxCell id="step5-detail" value="RepleManager.ts:145&#xa;docker run ... codepilot bash" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;fontColor=#64748B;align=left;verticalAlign=middle;fontSize=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="110" y="490" width="220" height="24" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
