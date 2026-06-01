@@ -6,8 +6,15 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { Prisma } from "@prisma/client";
 import { AuthRequest } from "../middleware/auth.js";
+import type { User } from "@prisma/client";
 
 dotenv.config();
+
+/** Never expose the password hash to clients. */
+const publicUser = (user: User) => {
+  const { password, ...safe } = user;
+  return safe;
+};
 
 const getMe = async (req: Request, res: Response) => {
   const userId = (req as AuthRequest).userId;
@@ -60,7 +67,7 @@ const createUser = async (req: Request, res: Response) => {
     });
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-    res.status(201).json({ user, token });
+    res.status(201).json({ user: publicUser(user), token });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       // Unique constraint violation (eg. email already exists)
@@ -98,7 +105,7 @@ try {
   }
 
   const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: "7d" });
-  res.status(200).json({ user, token });
+  res.status(200).json({ user: publicUser(user), token });
 }
  catch (error) {
   console.error("Failed to sign in", {

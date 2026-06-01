@@ -3,20 +3,12 @@ const router = Router();
 import { prisma } from "../lib/prisma.js";
 import { authenticate, AuthRequest } from "../middleware/auth.js";
 import archiver from "archiver";
-import { S3Client, GetObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { Readable } from "stream";
-
-// Configure S3 client
-const s3Client = new S3Client({
-  region: "auto",
-  endpoint: process.env.endpoint!,
-  credentials: {
-    accessKeyId: process.env.accessKeyId!,
-    secretAccessKey: process.env.secretAccessKey!,
-  },
-});
-
-const bucket = "codepilot-bucket";
+import {
+  listAllObjects,
+  getObjectStream,
+  copyProjectFiles,
+  deleteProjectFiles,
+} from "../utils/s3.js";
 
 const getIdParam = (id: string | string[]): string => Array.isArray(id) ? id[0] : id;
 
@@ -154,6 +146,20 @@ router.post("/:id/clone", authenticate, async (req: AuthRequest, res) => {
       },
     });
 
+    // Copy the actual workspace files in object storage so the clone isn't empty.
+    try {
+      const copied = await copyProjectFiles(id, newProject.id);
+      if (copied !== newProject.fileCount) {
+        await prisma.project.update({
+          where: { id: newProject.id },
+          data: { fileCount: copied },
+        });
+        newProject.fileCount = copied;
+      }
+    } catch (err) {
+      console.error("Error copying cloned project files:", err);
+    }
+
     res.json(newProject);
   } catch (error) {
     console.error("Error cloning project:", error);
@@ -175,13 +181,7 @@ router.get("/:id/export", authenticate, async (req: AuthRequest, res) => {
     }
 
     const prefix = `projects/${id}/`;
-
-    const list = await s3Client.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: prefix,
-      }),
-    );
+    const keys = await listAllObjects(prefix);
 
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="${project.name}.zip"`);
@@ -189,38 +189,30 @@ router.get("/:id/export", authenticate, async (req: AuthRequest, res) => {
     const archive = archiver("zip", { zlib: { level: 9 } });
 
     archive.on("error", (err) => {
-      throw err;
+      console.error("Archive error:", err);
+      res.destroy(err);
     });
 
     archive.pipe(res);
 
-    if (list.Contents && list.Contents.length > 0) {
-      for (const obj of list.Contents) {
-        if (!obj.Key) continue;
+    for (const key of keys) {
+      const fileName = key.slice(prefix.length);
+      if (!fileName || key.endsWith("/")) continue;
 
-        const fileName = obj.Key.replace(prefix, "");
-        if (!fileName) continue;
-
-        try {
-          const data = await s3Client.send(
-            new GetObjectCommand({
-              Bucket: bucket,
-              Key: obj.Key,
-            }),
-          );
-
-          const bodyContents = await streamToBuffer(data.Body as Readable);
-          archive.append(bodyContents, { name: fileName });
-        } catch (err) {
-          console.error(`Error fetching file ${obj.Key}:`, err);
-        }
+      try {
+        const body = await getObjectStream(key);
+        archive.append(body, { name: fileName });
+      } catch (err) {
+        console.error(`Error fetching file ${key}:`, err);
       }
     }
 
-    archive.finalize();
+    await archive.finalize();
   } catch (error) {
     console.error("Error exporting project:", error);
-    res.status(500).json({ error: "Failed to export project" });
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to export project" });
+    }
   }
 });
 
@@ -238,20 +230,19 @@ router.delete("/:id", authenticate, async (req: AuthRequest, res) => {
     }
 
     await prisma.project.delete({ where: { id } });
+
+    // Best-effort cleanup of stored workspace files so they don't orphan.
+    try {
+      await deleteProjectFiles(id);
+    } catch (err) {
+      console.error("Error deleting project files from storage:", err);
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error("Error deleting project:", error);
     res.status(500).json({ error: "Failed to delete project" });
   }
 });
-
-async function streamToBuffer(stream: Readable): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on("end", () => resolve(Buffer.concat(chunks)));
-    stream.on("error", reject);
-  });
-}
 
 export default router;

@@ -16,7 +16,7 @@ export const hash = async (password: string): Promise<string> => {
     const salt = randomBytes(16).toString('hex');
 
     scrypt(password, salt, keyLength, (error, derivedKey) => {
-      if (error) reject(error);
+      if (error) return reject(error);
       // derivedKey is of type Buffer
       resolve(`${salt}.${derivedKey.toString('hex')}`);
     });
@@ -32,10 +32,14 @@ export const hash = async (password: string): Promise<string> => {
 export const compare = async (password: string, hash: string): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const [salt, hashKey] = hash.split('.');
+    if (!salt || !hashKey) return resolve(false);
+
     // we need to pass buffer values to timingSafeEqual
     const hashKeyBuff = Buffer.from(hashKey, 'hex');
     scrypt(password, salt, keyLength, (error, derivedKey) => {
-      if (error) reject(error);
+      if (error) return reject(error);
+      // timingSafeEqual throws on length mismatch — guard it explicitly.
+      if (hashKeyBuff.length !== derivedKey.length) return resolve(false);
       // compare the new supplied password with the hashed password using timeSafeEqual
       resolve(timingSafeEqual(hashKeyBuff, derivedKey));
     });
