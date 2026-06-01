@@ -4,7 +4,12 @@ import path from "path";
 import fs from "fs";
 import { Language, LANGUAGE_MAP } from "./types";
 import crypto from "crypto";
-import { deleteFile, restoreProject, uploadFile } from "./utils/s3.js";
+import {
+  deleteProjectFile,
+  restoreProject,
+  putProjectFile,
+} from "./utils/s3.js";
+import { prisma } from "./lib/prisma.js";
 
 const TEMPLATE_MAP: Record<string, string> = {
   "C++": "cpp",
@@ -38,36 +43,78 @@ class Reple {
     this.projectId = projectId ?? crypto.randomUUID();
     this.projectLanguage = projectLanguage ?? "python";
 
-    this.hostDirectory = path.join("/tmp/codepilot", this.projectId);
+    // Per-session directory (not just per-project): if a stale connection for
+    // the same project is torn down, its close() must not delete the workspace
+    // of the live session. S3 (keyed by projectId) remains the source of truth.
+    this.hostDirectory = path.join(
+      "/tmp/codepilot",
+      `${this.projectId}-${crypto.randomUUID().slice(0, 8)}`,
+    );
 
     this.user.on("message", async (msg) => {
-      const parsed = JSON.parse(msg.toString());
+      let parsed: any;
+      try {
+        parsed = JSON.parse(msg.toString());
+      } catch {
+        console.warn("Ignoring malformed WS message");
+        return;
+      }
 
-      switch (parsed.type) {
-        case "terminal":
-          this.shell?.write(parsed.payload.data);
-          break;
+      try {
+        switch (parsed?.type) {
+          case "terminal":
+            this.shell?.write(parsed.payload?.data ?? "");
+            break;
 
-        case "init":
-          if (this.initialized) {
-            console.log("Already initialized, skipping");
-            return;
-          }
-          const lang = parsed.payload.language as string;
-          const mappedLang = LANGUAGE_MAP[lang] ?? Language.PYTHON;
-          this.projectLanguage = lang;
-          this.language = mappedLang;
-          this.initialized = true;
-          await this.init();
-          break;
+          case "init":
+            if (this.initialized) {
+              console.log("Already initialized, skipping");
+              return;
+            }
+            const lang = parsed.payload?.language as string;
+            const mappedLang = LANGUAGE_MAP[lang] ?? Language.PYTHON;
+            this.projectLanguage = lang ?? this.projectLanguage;
+            this.language = mappedLang;
+            this.initialized = true;
+            await this.init();
+            break;
 
-        case "files":
-          console.log("Got files");
-          await this.syncFilesToDisk(parsed.payload.files);
-          break;
+          case "files":
+            console.log("Got files");
+            await this.syncFilesToDisk(parsed.payload?.files ?? []);
+            break;
+        }
+      } catch (err) {
+        console.error("Error handling WS message:", err);
       }
     });
   }
+
+  /**
+   * Resolve a client-supplied relative path against the workspace, rejecting
+   * anything that would escape it (path traversal via "../", absolute paths…).
+   */
+  private resolveInsideWorkspace = (name: string): string | null => {
+    const target = path.resolve(this.hostDirectory, name);
+    const rel = path.relative(this.hostDirectory, target);
+    if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
+      return null;
+    }
+    return target;
+  };
+
+  /** Keep the project's file count and edit time fresh in the database. */
+  private updateProjectMeta = async (fileCount: number) => {
+    try {
+      await prisma.project.update({
+        where: { id: this.projectId },
+        data: { fileCount, lastEditedAt: new Date() },
+      });
+    } catch (err) {
+      // Project may not exist for ad-hoc sessions — don't crash the socket.
+      console.warn("Could not update project metadata:", (err as Error).message);
+    }
+  };
 
   private readProjectFiles = (
     dir: string,
@@ -135,6 +182,8 @@ class Reple {
         }),
       );
 
+      await this.updateProjectMeta(files.length);
+
       this.startContainer();
     } catch (err) {
       console.error("Init error:", err);
@@ -187,47 +236,56 @@ class Reple {
   syncFilesToDisk = async (files: { name: string; content: string }[]) => {
     console.log("Files syncing started");
 
-    const incomingFiles = new Set(files.map((file) => file.name));
+    // Drop any path that would escape the workspace before doing anything.
+    const safeFiles = files.filter((file) => {
+      if (this.resolveInsideWorkspace(file.name)) return true;
+      console.warn("Rejecting unsafe file path:", file.name);
+      return false;
+    });
+
+    const incomingFiles = new Set(safeFiles.map((file) => file.name));
     const existingFiles = this.readProjectFiles(this.hostDirectory).map((file) => file.name);
 
-    for (const existingFile of existingFiles) {
-      if (!incomingFiles.has(existingFile)) {
-        const filePath = path.join(this.hostDirectory, existingFile);
-        console.log("Deleting removed file:", existingFile);
-        await fs.promises.unlink(filePath);
-        await deleteFile(this.projectId, existingFile);
-      }
-    }
+    // Delete files that were removed on the client (disk + object storage).
+    await Promise.all(
+      existingFiles
+        .filter((existingFile) => !incomingFiles.has(existingFile))
+        .map(async (existingFile) => {
+          const filePath = this.resolveInsideWorkspace(existingFile);
+          if (!filePath) return;
+          console.log("Deleting removed file:", existingFile);
+          await fs.promises.unlink(filePath).catch(() => {});
+          await deleteProjectFile(this.projectId, existingFile).catch((err) =>
+            console.error("Failed to delete from storage:", err),
+          );
+        }),
+    );
 
-    for (const file of files) {
-      const filePath = path.join(this.hostDirectory, file.name);
+    // Write + upload only the files whose content actually changed.
+    await Promise.all(
+      safeFiles.map(async (file) => {
+        const filePath = this.resolveInsideWorkspace(file.name);
+        if (!filePath) return;
 
-      await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
 
-      let shouldUpload = true;
-
-      try {
-        const existingContent = await fs.promises.readFile(filePath, "utf-8");
-
-        const existingHash = this.getHash(existingContent);
-        const newHash = this.getHash(file.content);
-
-        if (existingHash === newHash) {
-          shouldUpload = false;
+        let changed = true;
+        try {
+          const existingContent = await fs.promises.readFile(filePath, "utf-8");
+          changed = this.getHash(existingContent) !== this.getHash(file.content);
+        } catch {
+          changed = true;
         }
-      } catch {
-        shouldUpload = true;
-      }
 
-      if (shouldUpload) {
+        if (!changed) return;
+
         console.log("Uploading changed file:", file.name);
-
         await fs.promises.writeFile(filePath, file.content);
-        await uploadFile(this.projectId, filePath, this.hostDirectory);
-      } else {
-        console.log("No changes detected:", file.name);
-      }
-    }
+        await putProjectFile(this.projectId, file.name, file.content);
+      }),
+    );
+
+    await this.updateProjectMeta(safeFiles.length);
   };
 
   close = async () => {
